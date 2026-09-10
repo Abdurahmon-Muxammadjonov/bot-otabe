@@ -111,6 +111,15 @@ class Application:
         return True
 
     def run(self) -> int:
+        # Railway/Render: PORT bo'lsa health-check server'ni ENG BOSHDA ishga
+        # tushiramiz - platforma portni darrov kutadi, Telegramga ulanish (getMe)
+        # sekin bo'lsa ham konteyner "o'lik" deb o'chirilmasin.
+        port = os.environ.get("PORT", "").strip()
+        if port.isdigit():
+            from .health import start_health_server
+
+            start_health_server(int(port))
+
         if not self._connect(USER_BOT):
             log.error("So'rov boti ishga tushmadi. To'xtatildi.")
             return 2
@@ -128,13 +137,6 @@ class Application:
         removed = self.storage.purge_old_sessions()
         if removed:
             log.info("%s ta eski sessiya tozalandi", removed)
-
-        # Railway/Render: PORT berilgan bo'lsa health-check server ishga tushadi.
-        port = os.environ.get("PORT", "").strip()
-        if port.isdigit():
-            from .health import start_health_server
-
-            start_health_server(int(port))
 
         self.notifier.start()
         self._install_signals()
