@@ -1,0 +1,2 @@
+# Bu bot faqat Python standart kutubxonasidan foydalanadi.
+# Hech qanday tashqi paket kerak emas - bu fayl Railwayga "Python loyihasi" ekanini bildiradi.

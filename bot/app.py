@@ -129,6 +129,13 @@ class Application:
         if removed:
             log.info("%s ta eski sessiya tozalandi", removed)
 
+        # Railway/Render: PORT berilgan bo'lsa health-check server ishga tushadi.
+        port = os.environ.get("PORT", "").strip()
+        if port.isdigit():
+            from .health import start_health_server
+
+            start_health_server(int(port))
+
         self.notifier.start()
         self._install_signals()
 

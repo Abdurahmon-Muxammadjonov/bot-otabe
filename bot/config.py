@@ -126,7 +126,14 @@ def load_config() -> Config:
         )
         admin_token = ""
 
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    # Railway/Render'da fayl tizimi vaqtinchalik - Volume ulab, DATA_DIR=/data
+    # bilan ko'rsatilsa, ma'lumot deploy'lar orasida saqlanadi.
+    data_dir = Path(_env("DATA_DIR") or DATA_DIR)
+    try:
+        data_dir.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        data_dir = DATA_DIR
+        data_dir.mkdir(parents=True, exist_ok=True)
 
     return Config(
         user_bot_token=user_token,
@@ -140,5 +147,5 @@ def load_config() -> Config:
         max_per_day=_env_int("MAX_PER_DAY", 5),
         tz_offset_hours=_env_int("TZ_OFFSET_HOURS", 5),
         log_level=_env("LOG_LEVEL", "INFO").upper(),
-        db_path=DATA_DIR / _env("DB_FILE", "db.json"),
+        db_path=data_dir / _env("DB_FILE", "db.json"),
     )

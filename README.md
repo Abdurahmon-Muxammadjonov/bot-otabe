@@ -180,3 +180,46 @@ Ha. Doimiy ishlashi uchun botni serverga (VPS) joylash kerak — kerak bo'lsa ay
 - `.env` faylini hech kimga bermang, skrinshot qilmang — u tokenlarni saqlaydi.
 - Token boshqa birovga ma'lum bo'lsa: @BotFather → `/revoke` → yangi token oling.
 - `ADMIN_PASSWORD` ni o'zgartiring va faqat xodimlarga ayting.
+
+---
+
+## ☁️ Railway'ga joylash (24/7 ishlashi uchun)
+
+Bot doimiy ishlashi uchun uni Railway'ga qo'yish mumkin. Loyihada kerakli
+fayllar bor (`Procfile`, `railway.json`, `requirements.txt`), shuning uchun
+Railway avtomatik quradi va ishga tushiradi.
+
+### 1) Repozitoriyni ulash
+Railway → **New Project** → **Deploy from GitHub repo** → shu repozitoriyni tanlang.
+
+### 2) Muhit o'zgaruvchilarini (Variables) kiriting
+Railway'da **Variables** bo'limiga o'ting va quyidagilarni qo'shing
+(bu yerda `.env` ishlatilmaydi — tokenlar shu yerga yoziladi):
+
+| O'zgaruvchi | Qiymat |
+|---|---|
+| `USER_BOT_TOKEN` | So'rov botining tokeni (@BotFather) |
+| `ADMIN_BOT_TOKEN` | Admin botining tokeni |
+| `ADMIN_PASSWORD` | Admin paroli (o'zingiz tanlang) |
+| `COMPANY_NAME` | Kompaniya nomi |
+| `CONTACT_INFO` | Aloqa (ixtiyoriy) |
+| `DATA_DIR` | `/data` (pastdagi Volume bilan birga) |
+
+### 3) Ma'lumot saqlanishi uchun Volume qo'shing ⚠️ MUHIM
+Railway'da fayl tizimi har deploy'da **o'chib ketadi**. Zayavkalar va
+ro'yxatdan o'tgan adminlar yo'qolmasligi uchun:
+
+Railway → xizmat → **Settings** → **Volumes** → **New Volume** →
+**Mount path** ni `/data` qilib qo'ying. Keyin `DATA_DIR=/data` o'zgaruvchisi
+o'sha volumega ma'lumotni yozadi.
+
+> Volume qo'ymasangiz ham bot ishlaydi, lekin har deploy'dan keyin adminlar
+> qayta `/start` + parol yuborishi kerak bo'ladi.
+
+### 4) Faqat BITTA nusxa ishlasin
+Bir tokenli bot ikki joyda (masalan lokal kompyuter + Railway) bir vaqtda
+ishlasa, Telegram **409 Conflict** beradi. Railway'da ishga tushirgach,
+lokal botni (`python3 main.py`) **to'xtating**.
+
+Deploy tugagach, Railway loglarida `✅ BOT ISHGA TUSHDI` ko'rinadi —
+demak tayyor.
