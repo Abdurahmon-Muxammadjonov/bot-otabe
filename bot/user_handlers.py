@@ -10,7 +10,13 @@ from . import texts as T
 from .admin_handlers import display_name, handle_admin_command, try_login
 from .service import Service, USER_BOT
 from .telegram import BotAPI, safe_send
-from .utils import contact_keyboard, esc, remove_keyboard, restart_keyboard
+from .utils import (
+    contact_keyboard,
+    esc,
+    mini_app_keyboard,
+    remove_keyboard,
+    restart_keyboard,
+)
 from .validators import clean_name, normalize_phone, pretty_phone
 
 log = logging.getLogger(__name__)
@@ -48,7 +54,11 @@ def start_flow(service: Service, api: BotAPI, chat_id: int, user: Dict[str, Any]
     text = (T.GREETING_AGAIN if returning else T.GREETING).format(
         company=esc(service.config.company_name)
     )
-    api.send_message(chat_id, text, reply_markup=remove_keyboard())
+    api.send_message(
+        chat_id,
+        text,
+        reply_markup=mini_app_keyboard(T.BTN_OPEN_AUDIT, service.config.mini_app_url),
+    )
 
 
 def _ask_phone(api: BotAPI, chat_id: int, name: str) -> None:

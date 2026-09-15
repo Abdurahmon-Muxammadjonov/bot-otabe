@@ -270,6 +270,23 @@ class BotAPI:
         except TelegramError as exc:
             log.warning("%s: komandalar o'rnatilmadi: %s", self.label, exc)
 
+    def set_chat_menu_button(self, web_app_url: str, text: str) -> None:
+        """Shaxsiy chat menyusiga doimiy mini app tugmasini o'rnatadi."""
+        try:
+            self.call(
+                "setChatMenuButton",
+                {
+                    "menu_button": {
+                        "type": "web_app",
+                        "text": text,
+                        "web_app": {"url": web_app_url},
+                    }
+                },
+                timeout=20,
+            )
+        except TelegramError as exc:
+            log.warning("%s: mini app menyusi o'rnatilmadi: %s", self.label, exc)
+
 
 def safe_send(
     api: BotAPI,

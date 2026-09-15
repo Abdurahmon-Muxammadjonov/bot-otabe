@@ -123,11 +123,24 @@ Har bir yangi zayavka **2-botga (admin boti)** shu ko'rinishda tushadi:
 | `ADMIN_IDS` | Doimiy adminlar ID lari, vergul bilan (ixtiyoriy) |
 | `COMPANY_NAME` | Salomlashuvda ko'rinadigan nom |
 | `CONTACT_INFO` | Mijozga ko'rsatiladigan aloqa (telefon/manzil) |
+| `MINI_APP_URL` | Telegram ichida ochiladigan sotuv auditi manzili |
 | `SUBMIT_COOLDOWN_SEC` | Ikki so'rov orasidagi eng kam vaqt (spamga qarshi) |
 | `MAX_PER_DAY` | Bir mijoz kuniga nechta so'rov qoldira oladi |
 | `TZ_OFFSET_HOURS` | Vaqt mintaqasi (Toshkent = 5) |
 
 Matnlarni o'zgartirmoqchi bo'lsangiz — hammasi **`bot/texts.py`** faylida, bir joyda.
+
+### 📊 Sotuv auditi Mini App
+
+Foydalanuvchi `/start` bosganda sotuv auditi Telegram ichida Mini App sifatida
+ochiladigan tugma ko'rinadi. Shuningdek, bot chatining menyusida ham audit tugmasi
+doimiy mavjud bo'ladi. Standart manzil:
+
+`https://musical-sopapillas-ddba2b.netlify.app/`
+
+Boshqa HTTPS domen ishlatilsa, `.env` yoki Railway Variables'da
+`MINI_APP_URL` qiymatini almashtiring. Telegram Mini App uchun manzil HTTPS
+bo'lishi shart.
 
 ---
 
@@ -203,6 +216,7 @@ Railway'da **Variables** bo'limiga o'ting va quyidagilarni qo'shing
 | `ADMIN_PASSWORD` | Admin paroli (o'zingiz tanlang) |
 | `COMPANY_NAME` | Kompaniya nomi |
 | `CONTACT_INFO` | Aloqa (ixtiyoriy) |
+| `MINI_APP_URL` | Sotuv auditi Mini App HTTPS manzili |
 | `DATA_DIR` | `/data` (pastdagi Volume bilan birga) |
 
 ### 3) Ma'lumot saqlanishi uchun Volume qo'shing ⚠️ MUHIM

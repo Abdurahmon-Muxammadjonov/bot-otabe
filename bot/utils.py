@@ -61,6 +61,16 @@ def restart_keyboard(button_text: str) -> Dict[str, Any]:
     }
 
 
+def mini_app_keyboard(button_text: str, url: str) -> Dict[str, Any]:
+    """Telegram ichida audit mini app'ini ochadigan reply tugmasi."""
+    return {
+        "keyboard": [[{"text": button_text, "web_app": {"url": url}}]],
+        "resize_keyboard": True,
+        "one_time_keyboard": True,
+        "is_persistent": False,
+    }
+
+
 def remove_keyboard() -> Dict[str, Any]:
     return {"remove_keyboard": True}
 

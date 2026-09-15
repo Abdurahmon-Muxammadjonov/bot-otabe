@@ -86,6 +86,7 @@ class Config:
     admin_password: str = "admin"
     company_name: str = "Xizmat"
     contact_info: str = ""
+    mini_app_url: str = "https://musical-sopapillas-ddba2b.netlify.app/"
     poll_timeout: int = 25
     submit_cooldown_sec: int = 45
     max_per_day: int = 5
@@ -142,6 +143,10 @@ def load_config() -> Config:
         admin_password=_env("ADMIN_PASSWORD", "admin"),
         company_name=_env("COMPANY_NAME", "Xizmat"),
         contact_info=_env("CONTACT_INFO", ""),
+        mini_app_url=_env(
+            "MINI_APP_URL",
+            "https://musical-sopapillas-ddba2b.netlify.app/",
+        ),
         poll_timeout=_env_int("POLL_TIMEOUT", 25),
         submit_cooldown_sec=_env_int("SUBMIT_COOLDOWN_SEC", 45),
         max_per_day=_env_int("MAX_PER_DAY", 5),

@@ -6,6 +6,7 @@ from __future__ import annotations
 BTN_SEND_CONTACT = "📱 Raqamni yuborish"
 BTN_CANCEL = "🚫 Bekor qilish"
 BTN_NEW_REQUEST = "📝 Yangi so'rov qoldirish"
+BTN_OPEN_AUDIT = "📊 Sotuv auditini boshlash"
 
 # ----------------------------------------------------- foydalanuvchi boti
 GREETING = (
