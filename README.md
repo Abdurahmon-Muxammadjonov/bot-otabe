@@ -133,8 +133,8 @@ Matnlarni o'zgartirmoqchi bo'lsangiz — hammasi **`bot/texts.py`** faylida, bir
 ### 📊 Sotuv auditi Mini App
 
 Foydalanuvchi `/start` bosganda sotuv auditi Telegram ichida Mini App sifatida
-ochiladigan tugma ko'rinadi. Shuningdek, bot chatining menyusida ham audit tugmasi
-doimiy mavjud bo'ladi. Standart manzil:
+ochiladigan tugma ko'rinadi. User bot va sozlangan admin bot chatlarining menyusida
+ham audit tugmasi doimiy mavjud bo'ladi. Standart manzil:
 
 `https://musical-sopapillas-ddba2b.netlify.app/`
 

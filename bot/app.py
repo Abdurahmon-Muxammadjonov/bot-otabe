@@ -108,11 +108,10 @@ class Application:
         api.set_my_commands(
             user_handlers.BOT_COMMAND_LIST if bot_key == USER_BOT else ADMIN_COMMAND_LIST
         )
-        if bot_key == USER_BOT:
-            api.set_chat_menu_button(
-                self.config.mini_app_url,
-                T.BTN_OPEN_AUDIT,
-            )
+        api.set_chat_menu_button(
+            self.config.mini_app_url,
+            T.BTN_OPEN_AUDIT,
+        )
         return True
 
     def run(self) -> int:
