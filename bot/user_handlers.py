@@ -55,7 +55,7 @@ def start_flow(service: Service, api: BotAPI, chat_id: int, user: Dict[str, Any]
         api.send_message(
             chat_id,
             text + T.GREETING_AUDIT_HINT,
-            reply_markup=webapp_keyboard(T.BTN_OPEN_AUDIT, service.config.audit_url),
+            reply_markup=webapp_keyboard(T.BTN_OPEN_AUDIT, service.config.webapp_url),
         )
         return
     api.send_message(chat_id, text, reply_markup=remove_keyboard())
@@ -68,7 +68,7 @@ def send_audit_invite(service: Service, api: BotAPI, chat_id: int) -> bool:
     api.send_message(
         chat_id,
         T.AUDIT_INVITE,
-        reply_markup=webapp_keyboard(T.BTN_OPEN_AUDIT, service.config.audit_url),
+        reply_markup=webapp_keyboard(T.BTN_OPEN_AUDIT, service.config.webapp_url),
     )
     return True
 

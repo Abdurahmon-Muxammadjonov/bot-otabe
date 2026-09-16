@@ -131,7 +131,6 @@ Har bir yangi zayavka **2-botga (admin boti)** shu ko'rinishda tushadi:
 | `MAX_PER_DAY` | Bir mijoz kuniga nechta so'rov qoldira oladi |
 | `TZ_OFFSET_HOURS` | Vaqt mintaqasi (Toshkent = 5) |
 | `WEBAPP_URL` | Mini App ochiq HTTPS manzili (Railway'da avtomatik) |
-| `SITE_URL` | Portfolio sayt manbai (Netlify) — Mini App bosh sahifasi |
 
 Matnlarni o'zgartirmoqchi bo'lsangiz — hammasi **`bot/texts.py`** faylida, bir joyda.
 
@@ -157,8 +156,7 @@ bot/
   web.py                 ← HTTP server: health-check + Mini App + /api/lead
   audit.py               ← audit ballini hisoblash, initData imzosini tekshirish
 webapp/
-  index.html             ← Audit Mini App sahifasi (dizayn + logika, bitta fayl)
-  site.html              ← Portfolio sayt nusxasi (Netlify ishlamasa zaxira)
+  index.html             ← Mini App sahifasi (dizayn + logika, bitta fayl)
   audit.json             ← 28 savol, bloklar, tavsiyalar (matnlarni shu yerda tahrirlang)
 data/db.json             ← zayavkalar saqlanadi (nusxa olib turing!)
 logs/bot.log             ← ish jurnali
@@ -187,21 +185,10 @@ Ha. Doimiy ishlashi uchun botni serverga (VPS) joylash kerak — kerak bo'lsa ay
 
 ---
 
-## 🔍 7. Mini App (sayt + sotuv auditi)
+## 🔍 7. Mini App (sotuv auditi)
 
-Mini App ikki qismdan iborat, ikkalasi ham botning o'zidan xizmat qilinadi:
-
-| Manzil | Nima | Qayerdan ochiladi |
-|---|---|---|
-| `/` | **Portfolio sayt** — `SITE_URL` (Netlify) dan avtomatik olinadi, 10 daqiqada yangilanadi; Netlify javob bermasa `webapp/site.html` nusxasi | Chatdagi **Menyu** tugmasi |
-| `/audit` | **Sotuv bo'limi auditi** (28 savol) | `/audit` buyrug'i, `/start` dagi tugma, saytdagi «Biznes Audit» tugmalari |
-
-Saytni Netlify'da tahrirlashda davom etasiz — bot uni o'zi olib, Telegram uchun
-moslaydi (SDK qo'shadi, «Biznes Audit» tugmalarini `/audit` ga yo'naltiradi,
-t.me havolalarini Telegram ichida ochadi). Nusxani yangilash:
-`curl -sL https://otabeksobirovv.netlify.app/ -o webapp/site.html`.
-
-Audit oqimi:
+Mijoz botda **Menyu** tugmasini, `/audit` buyrug'ini yoki `/start` dagi
+«🔍 Sotuv auditini boshlash» tugmasini bosadi → Telegram ichida ilova ochiladi:
 
 ```
 Kirish  →  3 ta kontekst savoli  →  28 savol (6 blok)  →  Natija:

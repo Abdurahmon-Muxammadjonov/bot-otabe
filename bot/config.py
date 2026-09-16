@@ -112,11 +112,8 @@ class Config:
     tz_offset_hours: int = 5
     log_level: str = "INFO"
     db_path: Path = field(default_factory=lambda: DATA_DIR / "db.json")
-    # Mini App ochiq HTTPS manzili (botning o'zi). Bo'sh bo'lsa - tugmalar ko'rinmaydi.
+    # Mini App (sotuv auditi) ochiq HTTPS manzili. Bo'sh bo'lsa - tugmalar ko'rinmaydi.
     webapp_url: str = ""
-    # Portfolio sayt manbai (Netlify) - bot uni Mini App'ning bosh sahifasi sifatida
-    # ko'rsatadi. Bo'sh bo'lsa - webapp/site.html nusxasi ishlatiladi.
-    site_url: str = ""
 
     @property
     def admin_bot_enabled(self) -> bool:
@@ -125,11 +122,6 @@ class Config:
     @property
     def webapp_enabled(self) -> bool:
         return bool(self.webapp_url)
-
-    @property
-    def audit_url(self) -> str:
-        """Audit sahifasi (Mini App ichida /audit)."""
-        return f"{self.webapp_url}/audit" if self.webapp_url else ""
 
 
 def load_config() -> Config:
@@ -172,7 +164,6 @@ def load_config() -> Config:
     return Config(
         user_bot_token=user_token,
         webapp_url=_webapp_url(),
-        site_url=_env("SITE_URL").rstrip("/"),
         admin_bot_token=admin_token,
         admin_ids=_env_ids("ADMIN_IDS"),
         admin_password=_env("ADMIN_PASSWORD", "admin"),

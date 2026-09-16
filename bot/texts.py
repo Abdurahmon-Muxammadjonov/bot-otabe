@@ -7,7 +7,7 @@ BTN_SEND_CONTACT = "📱 Raqamni yuborish"
 BTN_CANCEL = "🚫 Bekor qilish"
 BTN_NEW_REQUEST = "📝 Yangi so'rov qoldirish"
 BTN_OPEN_AUDIT = "🔍 Sotuv auditini boshlash"
-MENU_BUTTON_AUDIT = "🌐 Sayt & Audit"
+MENU_BUTTON_AUDIT = "🔍 Audit"
 
 # ----------------------------------------------------- foydalanuvchi boti
 GREETING = (
