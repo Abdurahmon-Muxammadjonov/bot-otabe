@@ -265,8 +265,14 @@ Railway'da **Variables** bo'limiga o'ting va quyidagilarni qo'shing
 
 ### 3a) Mini App ishlashi uchun domen yarating
 Railway → xizmat → **Settings** → **Networking** → **Generate Domain**.
+Port so'rasa **8080** yozing (bot `PORT` berilmasa shu portda ishlaydi).
 Shu bilan Railway `RAILWAY_PUBLIC_DOMAIN` o'zgaruvchisini o'zi qo'yadi va bot
-Mini App tugmalarini avtomatik yoqadi. Loglarda `Mini App : https://...` ko'rinadi.
+Mini App tugmalarini avtomatik yoqadi. Domen yaratilgandan keyin bir marta
+**Redeploy** qiling. Loglarda `Mini App : https://...` ko'rinadi.
+
+> `https://<domen>/health` ochilganda `OK - bot ishlayapti` chiqishi kerak.
+> **502** chiqsa — domen porti bilan bot porti mos emas: Networking'da domen
+> yonidagi portni `8080` qiling (yoki Variables'ga `PORT=8080` qo'shing).
 
 ### 3) Ma'lumot saqlanishi uchun Volume qo'shing ⚠️ MUHIM
 Railway'da fayl tizimi har deploy'da **o'chib ketadi**. Zayavkalar va

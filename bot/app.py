@@ -120,16 +120,15 @@ class Application:
         # Railway/Render: PORT bo'lsa web server'ni (health-check + Mini App)
         # ENG BOSHDA ishga tushiramiz - platforma portni darrov kutadi, Telegramga
         # ulanish (getMe) sekin bo'lsa ham konteyner "o'lik" deb o'chirilmasin.
+        # PORT berilmagan bo'lsa ham 8080 da ishga tushiramiz - Railway domen
+        # portini 8080 qilib qo'ysangiz yetarli; lokalda http://localhost:8080
+        # da Mini App'ni brauzerda ko'rish mumkin.
         port = os.environ.get("PORT", "").strip()
-        if port.isdigit():
-            from .web import start_web_server
+        if not port.isdigit():
+            port = "8080"
+        from .web import start_web_server
 
-            start_web_server(int(port), self.service)
-        elif self.config.webapp_enabled:
-            log.warning(
-                "WEBAPP_URL berilgan, lekin PORT yo'q - Mini App sahifasi xizmat "
-                "qilinmaydi. Lokalda: PORT=8080 python3 main.py"
-            )
+        start_web_server(int(port), self.service)
 
         if not self._connect(USER_BOT):
             log.error("So'rov boti ishga tushmadi. To'xtatildi.")
