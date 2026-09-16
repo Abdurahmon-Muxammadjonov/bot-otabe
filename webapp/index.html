@@ -506,6 +506,9 @@ function safeParse(v) { try { return JSON.parse(v); } catch (e) { return null; }
 let PROFILE, BLOCKS, Q, BANDS;
 let profile = {}, answers = [], idx = 0, leadSent = false, avgCheckValue = null, submitting = false;
 let screenName = 'intro';
+// Saytdan (Mini App bosh sahifasi) kelingan bo'lsa - Telegram «Orqaga» tugmasi saytga qaytaradi.
+let cameFromSite = false;
+try { cameFromSite = history.length > 1 && !!document.referrer && new URL(document.referrer).origin === location.origin; } catch (e) {}
 
 const blockOf = id => BLOCKS.find(b => b.id === id);
 const cls = p => p >= 0.75 ? 's-good' : p >= 0.45 ? 's-mid' : 's-bad';
@@ -516,7 +519,7 @@ function go(name) {
   $('#s-' + name).classList.add('on');
   screenName = name;
   window.scrollTo(0, 0);
-  if (name === 'intro') { ui.back(null); ui.closingConfirm(false); }
+  if (name === 'intro') { ui.back(cameFromSite ? () => history.back() : null); ui.closingConfirm(false); }
   if (name === 'profile') { ui.back(() => go_intro()); ui.closingConfirm(true); }
   if (name === 'audit') { ui.back(prevQ); ui.closingConfirm(true); }
   if (name === 'result') { ui.back(null); }

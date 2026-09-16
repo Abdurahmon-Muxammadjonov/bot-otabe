@@ -3,7 +3,8 @@
 Railway/Render konteynerni PORT orqali "tirik"ligini tekshiradi - bu server
 shu ishni bajaradi VA Mini App (sotuv auditi) sahifasini xizmat qiladi:
 
-    GET  /            -> Mini App (webapp/index.html)
+    GET  /            -> Portfolio sayt (SITE_URL dan olinadi, zaxira: webapp/site.html)
+    GET  /audit       -> Sotuv auditi Mini App (webapp/index.html)
     GET  /health      -> "OK" (platforma health-check)
     GET  /api/audit   -> savollar bazasi (JSON)
     POST /api/lead    -> audit natijasi + kontakt -> zayavka (initData imzosi bilan)
@@ -14,10 +15,13 @@ xizmat qiladi; Storage/Notifier o'zi thread-safe.
 
 from __future__ import annotations
 
+import gzip
 import json
 import logging
+import re
 import threading
 import time
+import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Dict, Optional, Tuple
 from urllib.parse import urlsplit
@@ -33,6 +37,9 @@ log = logging.getLogger(__name__)
 
 MAX_BODY = 64 * 1024
 COMPANY_MAX = 80
+SITE_TTL = 600          # Netlify'dan sayt necha soniyada bir yangilanadi
+SITE_FETCH_TIMEOUT = 15
+GZIP_MIN = 1024
 
 SECURITY_HEADERS = {
     "X-Content-Type-Options": "nosniff",
@@ -73,6 +80,112 @@ def _render_page(bot_username: str) -> bytes:
     return _read_page().replace("/*__BOT__*/", safe, 1).encode("utf-8")
 
 
+# ------------------------------------------------------------- sayt
+# Portfolio sayt Mini App'ning bosh sahifasi. Manba - SITE_URL (Netlify): sayt
+# o'sha yerda tahrirlanadi, bot uni vaqti-vaqti bilan olib, Telegram uchun
+# moslab beradi. Netlify javob bermasa - webapp/site.html nusxasi.
+_site_cache: Dict[str, Any] = {}
+_site_lock = threading.Lock()
+
+# Sayt ichiga qo'shiladigan Telegram moslashuvi: SDK, expand, audit tugmalari
+# /audit ga (bir oynada, initData saqlanib qoladi), t.me havolalari Telegram ichida.
+SITE_PATCH = """
+<script src="https://telegram.org/js/telegram-web-app.js?58"></script>
+<script>
+(function(){
+  var tg = window.Telegram && window.Telegram.WebApp;
+  if (tg) { try { tg.ready(); tg.expand(); } catch (e) {} }
+  var hash = location.hash || '';
+  // Telegram bergan #tgWebAppData=... hash SDK tomonidan o'qib olindi (sessionStorage'da
+  // saqlanadi) - saytning o'z skripti uni CSS selektor deb o'qimasligi uchun tozalaymiz.
+  if (/tgWebApp/.test(hash)) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
+  function patch(){
+    document.querySelectorAll('[data-audit], a[href*="musical-sopapillas"]').forEach(function(a){
+      a.href = '/audit' + hash; a.removeAttribute('target');
+    });
+    document.querySelectorAll('a[href^="https://t.me/"], a[href^="tg://"]').forEach(function(a){
+      if (!tg || !tg.openTelegramLink || a.dataset.tgPatched) return;
+      a.dataset.tgPatched = '1';
+      a.addEventListener('click', function(e){ e.preventDefault(); tg.openTelegramLink(a.href); });
+    });
+  }
+  patch(); setTimeout(patch, 300); window.addEventListener('load', patch);
+})();
+</script>
+"""
+
+_NETLIFY_HUD_RE = re.compile(r"<script[^>]*\.netlify/scripts/hud[^>]*></script>", re.I)
+_NETLIFY_META_RE = re.compile(r"<meta name=\"(?:hosting-provider|netlify-deploy)\"[^>]*>\s*", re.I)
+
+
+def _patch_site(html: str) -> str:
+    html = _NETLIFY_HUD_RE.sub("", html)
+    html = _NETLIFY_META_RE.sub("", html)
+    if "</body>" in html:
+        html = html.replace("</body>", SITE_PATCH + "</body>", 1)
+    else:
+        html += SITE_PATCH
+    return html
+
+
+def _site_snapshot() -> Optional[str]:
+    path = WEBAPP_DIR / "site.html"
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+
+
+def _fetch_site(url: str) -> Optional[str]:
+    try:
+        request = urllib.request.Request(
+            url, headers={"User-Agent": "ZayavkaBot/1.0 (+mini-app mirror)", "Accept": "text/html"}
+        )
+        with urllib.request.urlopen(request, timeout=SITE_FETCH_TIMEOUT) as response:
+            raw = response.read(4 * 1024 * 1024)
+        html = raw.decode("utf-8", "replace")
+        if "<html" not in html.lower():
+            return None
+        return html
+    except Exception as exc:  # noqa: BLE001 - tarmoq/HTTP xatolari
+        log.warning("Sayt (%s) olinmadi: %s", url, exc)
+        return None
+
+
+def site_page(site_url: str) -> Optional[bytes]:
+    """Patch qilingan sayt sahifasi (kesh: SITE_TTL). Sayt umuman yo'q bo'lsa None."""
+    now = time.time()
+    with _site_lock:
+        cached = _site_cache.get("body")
+        if cached is not None and now - _site_cache.get("at", 0) < SITE_TTL:
+            return cached
+        html = _fetch_site(site_url) if site_url else None
+        if html is not None:
+            _site_cache.update(body=_patch_site(html).encode("utf-8"), at=now, source="remote")
+            return _site_cache["body"]
+        if cached is not None:
+            # Netlify vaqtincha javob bermadi - eski keshni yana SITE_TTL saqlaymiz.
+            _site_cache["at"] = now
+            return cached
+        snapshot = _site_snapshot()
+        if snapshot is None:
+            return None
+        _site_cache.update(body=_patch_site(snapshot).encode("utf-8"), at=now, source="snapshot")
+        return _site_cache["body"]
+
+
+def prefetch_site(site_url: str) -> None:
+    """Birinchi ochilish sekin bo'lmasin - saytni fonda oldindan olib qo'yamiz."""
+    def run() -> None:
+        body = site_page(site_url)
+        if body is not None:
+            log.info(
+                "Sayt tayyor (%s, %d KB)", _site_cache.get("source", "?"), len(body) // 1024
+            )
+
+    threading.Thread(target=run, name="site-prefetch", daemon=True).start()
+
+
 class LeadHandler(BaseHTTPRequestHandler):
     """Bitta so'rovga xizmat qiladi. `server.service` orqali botga ulanadi."""
 
@@ -84,6 +197,11 @@ class LeadHandler(BaseHTTPRequestHandler):
     def _send(self, status: int, body: bytes, content_type: str, cache: str = "no-store") -> None:
         self.send_response(status)
         self.send_header("Content-Type", content_type)
+        accepts = self.headers.get("Accept-Encoding", "")
+        if len(body) >= GZIP_MIN and "gzip" in accepts and content_type.startswith("text/"):
+            body = gzip.compress(body, compresslevel=6)
+            self.send_header("Content-Encoding", "gzip")
+            self.send_header("Vary", "Accept-Encoding")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", cache)
         for key, value in SECURITY_HEADERS.items():
@@ -102,8 +220,14 @@ class LeadHandler(BaseHTTPRequestHandler):
     # ---------------------------------------------------------------- GET
     def do_GET(self) -> None:  # noqa: N802
         path = urlsplit(self.path).path.rstrip("/") or "/"
-        if path in ("/", "/app", "/index.html"):
-            service: Service = self.server.service  # type: ignore[attr-defined]
+        service: Service = self.server.service  # type: ignore[attr-defined]
+        if path == "/":
+            body = site_page(service.config.site_url)
+            if body is None:
+                # Sayt yo'q - bosh sahifa auditning o'zi.
+                body = _render_page(service.apis[USER_BOT].username)
+            self._send(200, body, "text/html; charset=utf-8", cache="no-cache")
+        elif path in ("/audit", "/app", "/index.html"):
             username = service.apis[USER_BOT].username
             self._send(200, _render_page(username), "text/html; charset=utf-8", cache="no-cache")
         elif path in ("/health", "/healthz", "/ping"):
@@ -296,7 +420,8 @@ def start_web_server(port: int, service: Service) -> None:
             return
         server.daemon_threads = True
         server.service = service  # type: ignore[attr-defined]
-        log.info("Web server tayyor: 0.0.0.0:%s (health-check + Mini App)", port)
+        log.info("Web server tayyor: 0.0.0.0:%s (health-check + sayt + audit)", port)
         server.serve_forever()
 
     threading.Thread(target=run, name="web", daemon=True).start()
+    prefetch_site(service.config.site_url)
