@@ -11,7 +11,8 @@ from .config import Config
 from .storage import Storage
 from .telegram import BotAPI, TelegramError
 from .texts import (
-    AUDIT_BLOCK, COMPANY_LINE, NEW_APPLICATION, SOURCE_WEBAPP, STATUS_FOOTER, STATUS_LABELS,
+    AUDIT_BLOCK, AUDIT_NO_PHONE, COMPANY_LINE, NEW_APPLICATION, PHONE_PENDING, SOURCE_WEBAPP,
+    STATUS_FOOTER, STATUS_LABELS,
 )
 from .utils import clip, esc, fmt_dt
 from .validators import pretty_phone
@@ -81,7 +82,7 @@ def render_application(app: Dict[str, Any], tz_offset: int) -> str:
         source=SOURCE_WEBAPP if is_webapp else "",
         name=esc(app.get("name")),
         company=COMPANY_LINE.format(company=esc(company)) if company else "",
-        phone=esc(pretty_phone(app.get("phone", ""))),
+        phone=esc(pretty_phone(app.get("phone") or "")) or PHONE_PENDING,
         tg=telegram_link(app),
         user_id=int(app.get("user_id") or 0),
         time=fmt_dt(app.get("created_at"), tz_offset),
@@ -90,6 +91,8 @@ def render_application(app: Dict[str, Any], tz_offset: int) -> str:
         from .audit import render_admin_summary  # aylanma importdan qochish
 
         text += AUDIT_BLOCK.format(summary=render_admin_summary(app["audit"]))
+        if not app.get("phone"):
+            text += AUDIT_NO_PHONE
     status = app.get("status", "new")
     if status != "new":
         who = esc(app.get("handled_by_name") or "admin")
@@ -199,6 +202,7 @@ class Notifier:
                 self.storage.add_notification(
                     app["id"], bot_key, chat_id, int(sent.get("message_id") or 0)
                 )
+                self._send_full_report(api, chat_id, current)
         log.info("Zayavka #%s: %s ta adminga yetkazildi", app["id"], delivered)
 
         # Fan-out davomida holat o'zgargan bo'lsa, yuborilgan kartalarni tekislaymiz.
@@ -206,6 +210,22 @@ class Notifier:
         if final and final.get("status") != "new":
             self.refresh_status(final)
         return delivered
+
+    def _send_full_report(self, api: BotAPI, chat_id: int, app: Dict[str, Any]) -> None:
+        """Mini App auditi bo'lsa - karta ostiga barcha zaif nuqtalar va tavsiyalar."""
+        if app.get("source") != "webapp" or not isinstance(app.get("audit"), dict):
+            return
+        from .audit import render_user_report  # aylanma importdan qochish
+
+        chunks = render_user_report(
+            app["audit"], self.config.company_name, for_admin=True, app_id=int(app["id"])
+        )
+        for chunk in chunks:
+            try:
+                api.send_message(chat_id, chunk)
+            except TelegramError as exc:
+                log.warning("%s: #%s hisoboti %s ga yuborilmadi: %s", api.label, app["id"], chat_id, exc)
+                return
 
     def _send_with_fallback(
         self,

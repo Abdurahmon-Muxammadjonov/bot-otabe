@@ -6,7 +6,8 @@ shu ishni bajaradi VA Mini App (sotuv auditi) sahifasini xizmat qiladi:
     GET  /            -> Mini App (webapp/index.html)
     GET  /health      -> "OK" (platforma health-check)
     GET  /api/audit   -> savollar bazasi (JSON)
-    POST /api/lead    -> audit natijasi + kontakt -> zayavka (initData imzosi bilan)
+    POST /api/result  -> audit tugadi (barcha javoblar) -> zayavka darrov 2-botga
+    POST /api/lead    -> ism/telefon/kompaniya -> o'sha zayavka yangilanadi
 
 Faqat standart kutubxona. Threading server - bir vaqtda bir necha so'rovga
 xizmat qiladi; Storage/Notifier o'zi thread-safe.
@@ -126,7 +127,7 @@ class LeadHandler(BaseHTTPRequestHandler):
     # ---------------------------------------------------------------- POST
     def do_POST(self) -> None:  # noqa: N802
         path = urlsplit(self.path).path.rstrip("/")
-        if path != "/api/lead":
+        if path not in ("/api/lead", "/api/result"):
             self._json(404, {"ok": False, "error": "Topilmadi"})
             return
         try:
@@ -147,7 +148,10 @@ class LeadHandler(BaseHTTPRequestHandler):
 
         service: Service = self.server.service  # type: ignore[attr-defined]
         try:
-            status, result = handle_lead(service, payload)
+            if path == "/api/result":
+                status, result = handle_result(service, payload)
+            else:
+                status, result = handle_lead(service, payload)
         except AuditError as exc:
             status, result = 400, {"ok": False, "error": str(exc)}
         except Exception:  # noqa: BLE001 - bitta xato serverni o'ldirmasin
@@ -160,23 +164,93 @@ class LeadHandler(BaseHTTPRequestHandler):
             log.info("web: %s %s", self.command, fmt % args)
 
 
-# ------------------------------------------------------------------- lead
-def handle_lead(service: Service, payload: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
-    """Mini App'dan kelgan audit natijasini tekshiradi va zayavka yaratadi."""
-    config = service.config
-
-    # 1) Kim yuboryapti? initData imzosi bot tokeni bilan tekshiriladi.
+# ------------------------------------------------------------------- auth
+def _auth(service: Service, payload: Dict[str, Any]) -> Tuple[Optional[Dict[str, Any]], Optional[Tuple[int, Dict[str, Any]]]]:
+    """initData imzosini tekshiradi. (tg_user, None) yoki (None, xato_javobi)."""
     init_data = payload.get("initData")
     if not isinstance(init_data, str) or not init_data:
-        return 401, {
+        return None, (401, {
             "ok": False,
             "code": "no_telegram",
             "error": "Ilovani Telegram orqali oching - shunda natija botga ulanadi.",
-        }
+        })
     try:
-        tg_user = audit.verify_init_data(init_data, config.user_bot_token)
+        return audit.verify_init_data(init_data, service.config.user_bot_token), None
     except AuditError as exc:
-        return 401, {"ok": False, "code": "bad_signature", "error": str(exc)}
+        return None, (401, {"ok": False, "code": "bad_signature", "error": str(exc)})
+
+
+# ---------------------------------------------------------------- result
+def handle_result(service: Service, payload: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+    """Barcha savollarga javob berildi - zayavka DARROV yaratiladi va 2-botga tushadi.
+
+    Telefon hali yo'q; mijoz formani to'ldirsa /api/lead o'sha zayavkani yangilaydi.
+    Shunday qilib auditni tugatgan, lekin formani tashlab ketgan mijoz ham yo'qolmaydi.
+    """
+    tg_user, error = _auth(service, payload)
+    if error:
+        return error
+    user_id = int(tg_user["id"])
+
+    result = audit.compute(payload.get("profile"), payload.get("answers"))
+
+    # Shu mijozning telefonsiz ochiq auditi bo'lsa - yangisini yaratmaymiz, yangilaymiz.
+    existing = _open_audit(service, user_id)
+    if existing is not None:
+        updated = service.storage.update_application(
+            existing["id"], audit=audit.summary_for_storage(result, None)
+        )
+        service.notifier.refresh_status(updated)
+        return 200, {"ok": True, "id": existing["id"], "score": result["score"], "band": result["band"]}
+
+    limit = _limit_message(service, user_id)
+    if limit:
+        return 429, {"ok": False, "code": "limit", "error": limit}
+
+    from .admin_handlers import display_name  # aylanma importdan qochish
+
+    application = service.storage.add_application(
+        user_id=user_id,
+        chat_id=user_id,
+        name=display_name(tg_user),
+        phone="",
+        username=tg_user.get("username") or "",
+        full_name=display_name(tg_user),
+        language_code=tg_user.get("language_code") or "",
+        phone_source="pending",
+        source="webapp",
+        company="",
+        audit=audit.summary_for_storage(result, None),
+    )
+    service.storage.clear_session(service.session_key(USER_BOT, user_id))
+    service.notifier.enqueue(application)
+    log.info(
+        "Mini App: audit tugadi -> zayavka #%s (user %s, ball %s, telefon kutilmoqda)",
+        application["id"], user_id, result["score"],
+    )
+    return 200, {"ok": True, "id": application["id"], "score": result["score"], "band": result["band"]}
+
+
+def _open_audit(service: Service, user_id: int, app_id: Optional[int] = None) -> Optional[Dict[str, Any]]:
+    """Shu mijozning telefonsiz (ochiq) Mini App zayavkasi - oxirgi 24 soat ichida."""
+    cutoff = time.time() - 24 * 3600
+    for app in service.storage.list_applications(limit=200):
+        if app.get("user_id") != user_id or app.get("source") != "webapp":
+            continue
+        if app.get("phone") or float(app.get("created_at") or 0) < cutoff:
+            continue
+        if app_id is not None and app["id"] != app_id:
+            continue
+        return app
+    return None
+
+
+# ------------------------------------------------------------------- lead
+def handle_lead(service: Service, payload: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+    """Ism/telefon keldi: ochiq zayavkani yangilaydi, bo'lmasa yangisini yaratadi."""
+    tg_user, error = _auth(service, payload)
+    if error:
+        return error
     user_id = int(tg_user["id"])
 
     # 2) Kontakt maydonlari - botdagi bilan bir xil tekshiruv.
@@ -195,16 +269,36 @@ def handle_lead(service: Service, payload: Dict[str, Any]) -> Tuple[int, Dict[st
 
     # 3) Ball serverda qayta hisoblanadi.
     result = audit.compute(payload.get("profile"), payload.get("answers"))
+    phone_source = "webapp_contact" if payload.get("phone_source") == "contact" else "webapp"
 
-    # 4) Spam/limit - botdagi qoidalar.
+    # 4) /api/result allaqachon zayavka ochgan bo'lsa - uni to'ldiramiz (limit tekshirilmaydi).
+    raw_id = payload.get("application_id")
+    app_id = raw_id if isinstance(raw_id, int) and not isinstance(raw_id, bool) else None
+    existing = _open_audit(service, user_id, app_id) or _open_audit(service, user_id)
+    if existing is not None:
+        application = service.storage.update_application(
+            existing["id"],
+            name=name,
+            phone=phone,
+            company=company,
+            phone_source=phone_source,
+            audit=audit.summary_for_storage(result, avg_check),
+        )
+        service.notifier.refresh_status(application)
+        log.info("Mini App: zayavka #%s telefon bilan to'ldirildi (user %s)", application["id"], user_id)
+        _finish_lead(service, application, result, name, phone)
+        return 200, {
+            "ok": True, "id": application["id"], "score": result["score"],
+            "band": result["band"], "bot": service.apis[USER_BOT].username,
+        }
+
+    # 5) Ochiq zayavka yo'q - yangisini yaratamiz (limit bilan).
     limit = _limit_message(service, user_id)
     if limit:
         return 429, {"ok": False, "code": "limit", "error": limit}
 
-    # 5) Saqlash va adminlarga uzatish.
     from .admin_handlers import display_name  # aylanma importdan qochish
 
-    phone_source = "webapp_contact" if payload.get("phone_source") == "contact" else "webapp"
     application = service.storage.add_application(
         user_id=user_id,
         chat_id=user_id,
@@ -224,14 +318,7 @@ def handle_lead(service: Service, payload: Dict[str, Any]) -> Tuple[int, Dict[st
         "Mini App: zayavka #%s (user %s, ball %s)", application["id"], user_id, result["score"]
     )
 
-    # 6) Mijozga hisobotni chatga yuboramiz (fon oqimida - javob kechikmasin).
-    threading.Thread(
-        target=_send_user_report,
-        args=(service, application, result, name, phone),
-        name="webapp-report",
-        daemon=True,
-    ).start()
-
+    _finish_lead(service, application, result, name, phone)
     return 200, {
         "ok": True,
         "id": application["id"],
@@ -239,6 +326,16 @@ def handle_lead(service: Service, payload: Dict[str, Any]) -> Tuple[int, Dict[st
         "band": result["band"],
         "bot": service.apis[USER_BOT].username,
     }
+
+
+def _finish_lead(service, application, result, name, phone) -> None:  # noqa: ANN001
+    """Mijozga hisobotni chatga yuboramiz (fon oqimida - javob kechikmasin)."""
+    threading.Thread(
+        target=_send_user_report,
+        args=(service, application, result, name, phone),
+        name="webapp-report",
+        daemon=True,
+    ).start()
 
 
 def _send_user_report(

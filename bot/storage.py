@@ -164,6 +164,16 @@ class Storage:
                     return deepcopy(record)
             return None
 
+    def update_application(self, app_id: int, **fields: Any) -> Optional[Dict[str, Any]]:
+        """Zayavka maydonlarini yangilaydi (Mini App: telefon keyin qo'shiladi)."""
+        with self._lock:
+            for record in self._data["applications"]:
+                if record["id"] == app_id:
+                    record.update(fields)
+                    self._save_locked()
+                    return deepcopy(record)
+            return None
+
     def add_notification(self, app_id: int, bot_key: str, chat_id: int, message_id: int) -> None:
         with self._lock:
             for record in self._data["applications"]:

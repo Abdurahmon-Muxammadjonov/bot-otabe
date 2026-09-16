@@ -218,12 +218,21 @@ def render_admin_summary(audit: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def render_user_report(audit: Dict[str, Any], company_name: str) -> List[str]:
-    """Mijozga yuboriladigan to'liq hisobot - Telegram limitiga mos bo'laklarda."""
+def render_user_report(
+    audit: Dict[str, Any], company_name: str, *, for_admin: bool = False, app_id: int = 0
+) -> List[str]:
+    """To'liq hisobot - Telegram limitiga mos bo'laklarda (mijozga yoki adminga)."""
     bank = load_bank()
-    head = [
+    if for_admin:
+        from .texts import AUDIT_REPORT_HEADER
+
+        head = [AUDIT_REPORT_HEADER.format(id=app_id)]
+    else:
+        head = [
         f"📋 <b>{esc(bank['title'])} — to'liq hisobot</b>",
         "",
+    ]
+    head += [
         f"🎯 <b>Umumiy ball: {audit['score']}/100</b> — {esc(audit['band'])}",
         esc(audit["band_text"]),
         "",
@@ -255,10 +264,11 @@ def render_user_report(audit: Dict[str, Any], company_name: str) -> List[str]:
         if current.strip():
             chunks.append(current)
 
-    chunks.append(
-        f"🤝 <b>{esc(company_name)}</b> jamoasi natijangizni ko'rdi va tez orada "
-        "siz bilan bog'lanadi. Savollaringiz bo'lsa — shu chatga yozing."
-    )
+    if not for_admin:
+        chunks.append(
+            f"🤝 <b>{esc(company_name)}</b> jamoasi natijangizni ko'rdi va tez orada "
+            "siz bilan bog'lanadi. Savollaringiz bo'lsa — shu chatga yozing."
+        )
     return chunks
 
 

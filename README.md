@@ -199,11 +199,16 @@ Kirish  →  3 ta kontekst savoli  →  28 savol (6 blok)  →  Natija:
   • Ism / kompaniya / telefon formasi  →  to'liq hisobot ochiladi
 ```
 
-Forma yuborilgach:
-- **Adminlarga** oddiy zayavka kartasi keladi, lekin `🔍 Sotuv auditi` belgisi,
-  kompaniya nomi, ball, bloklar diagrammasi va eng zaif 3 nuqta bilan.
-- **Mijozning chatiga** to'liq hisobot (barcha zaif nuqtalar + tavsiyalar) yuboriladi.
-- `/eksport` CSV'da `Kompaniya`, `Manba`, `Audit balli`, `Audit xulosasi` ustunlari bor.
+Zayavka **2-botga (admin) ikki bosqichda** tushadi — bitta lead ham yo'qolmaydi:
+
+1. **Oxirgi savolga javob berilishi bilan** adminlarga karta keladi: mijozning Telegram
+   profili, ball, bloklar diagrammasi, eng zaif 3 nuqta + alohida xabarda **to'liq hisobot**
+   (barcha zaif nuqtalar va tavsiyalar). Telefon o'rnida «hali kiritilmadi» turadi —
+   mijoz formani tashlab ketsa ham unga Telegram orqali yozish mumkin.
+2. **Mijoz ism/telefon yuborganda** o'sha karta yangilanadi (telefon, kompaniya,
+   o'rtacha chek qo'shiladi), mijozning chatiga esa to'liq hisobot boradi.
+
+`/eksport` CSV'da `Kompaniya`, `Manba`, `Audit balli`, `Audit xulosasi` ustunlari bor.
 
 Texnik jihatlar:
 - Sahifa **botning o'zidan** xizmat qilinadi (`webapp/index.html`), alohida hosting kerak emas.

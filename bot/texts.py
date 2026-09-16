@@ -155,6 +155,12 @@ NEW_APPLICATION = (
 )
 
 SOURCE_WEBAPP = "  ·  🔍 Sotuv auditi"
+PHONE_PENDING = "hali kiritilmadi"
+AUDIT_NO_PHONE = (
+    "\n\n⏳ <b>Mijoz hali telefon qoldirmadi</b> — auditni tugatdi, forma to'ldirilsa "
+    "bu karta yangilanadi. Hozircha Telegram orqali yozish mumkin."
+)
+AUDIT_REPORT_HEADER = "📋 <b>Zayavka #{id} — to'liq audit hisoboti</b>\n"
 COMPANY_LINE = "🏢 <b>Kompaniya:</b> {company}\n"
 AUDIT_BLOCK = "\n\n{summary}"
 

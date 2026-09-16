@@ -505,6 +505,7 @@ function safeParse(v) { try { return JSON.parse(v); } catch (e) { return null; }
 /* ---------- holat ---------- */
 let PROFILE, BLOCKS, Q, BANDS;
 let profile = {}, answers = [], idx = 0, leadSent = false, avgCheckValue = null, submitting = false;
+let resultId = null, resultPosting = false;   // /api/result yaratgan zayavka raqami
 let screenName = 'intro';
 
 const blockOf = id => BLOCKS.find(b => b.id === id);
@@ -556,6 +557,7 @@ function showIntro() {
 function resumeSaved() {
   profile = Object.assign({}, savedState.profile || {});
   answers = savedState.answers.slice();
+  resultId = Number.isInteger(savedState.resultId) ? savedState.resultId : null;
   renderProfile();
   const hasProfile = Object.keys(profile).length === PROFILE.length;
   if (!hasProfile) { go('profile'); updateProfileMain(); return; }
@@ -564,7 +566,7 @@ function resumeSaved() {
   idx = first; startAudit(false);
 }
 function discardSaved() { savedState = null; store.clear(); $('#resumeBox').classList.add('hide'); showIntro(); haptic('impact'); }
-function persist() { store.set({ v: 1, profile: profile, answers: answers, ts: Date.now() }); }
+function persist() { store.set({ v: 1, profile: profile, answers: answers, resultId: resultId, ts: Date.now() }); }
 
 /* ---------- demo ustunlar ---------- */
 function buildDemo() {
@@ -716,6 +718,17 @@ function showResult() {
   haptic('notify', 'success');
   ui.closingConfirm(true);
   updateResultMain();
+  postResult();
+}
+
+/* Barcha savollar tugadi - natija DARROV botga (adminlarga) ketadi, telefon keyin qo'shiladi. */
+function postResult() {
+  if (!inTelegram || resultId !== null || resultPosting || leadSent) return;
+  resultPosting = true;
+  fetch('/api/result', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ initData: tg.initData, profile: { sector: profile.sector, team: profile.team, leads: profile.leads }, answers: answers }) })
+    .then(r => r.json()).then(j => { if (j && j.ok && Number.isInteger(j.id)) { resultId = j.id; persist(); } })
+    .catch(() => {}).finally(() => { resultPosting = false; });
 }
 function renderFull() {
   const gaps = window._gaps || [];
@@ -809,7 +822,7 @@ function submitLead() {
     initData: tg.initData,
     name: name, company: comp, phone: phone, phone_source: phoneSource,
     profile: { sector: profile.sector, team: profile.team, leads: profile.leads },
-    answers: answers, avg_check: avgCheckValue,
+    answers: answers, avg_check: avgCheckValue, application_id: resultId,
   };
   submitting = true;
   ui.main('Yuborilmoqda…', null, { enabled: false, progress: true });
@@ -839,7 +852,7 @@ function finish() {
 }
 
 function restart() {
-  answers = new Array(Q.length).fill(null); profile = {}; idx = 0; leadSent = false; avgCheckValue = null; phoneSource = 'text';
+  answers = new Array(Q.length).fill(null); profile = {}; idx = 0; leadSent = false; avgCheckValue = null; phoneSource = 'text'; resultId = null;
   store.clear(); savedState = null; $('#resumeBox').classList.add('hide');
   $('#fThanks').classList.remove('on'); $('#lockBox').classList.remove('open'); $('#moneyOut').classList.remove('on');
   $('#fErr').classList.remove('on'); setErr('fWrapName', ''); setErr('fWrapPhone', '');
