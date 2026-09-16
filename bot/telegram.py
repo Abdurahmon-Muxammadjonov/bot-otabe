@@ -264,6 +264,23 @@ class BotAPI:
         except TelegramError:
             pass
 
+    def set_chat_menu_button(self, text: str, url: str) -> None:
+        """Chatdagi «Menyu» tugmasini Mini App ochadigan qilib qo'yadi (barcha chatlar uchun)."""
+        try:
+            self.call(
+                "setChatMenuButton",
+                {"menu_button": {"type": "web_app", "text": text[:32], "web_app": {"url": url}}},
+                timeout=20,
+            )
+        except TelegramError as exc:
+            log.warning("%s: menyu tugmasi o'rnatilmadi: %s", self.label, exc)
+
+    def reset_chat_menu_button(self) -> None:
+        try:
+            self.call("setChatMenuButton", {"menu_button": {"type": "default"}}, timeout=20)
+        except TelegramError as exc:
+            log.debug("%s: menyu tugmasi tiklanmadi: %s", self.label, exc)
+
     def set_my_commands(self, commands: Iterable[Dict[str, str]]) -> None:
         try:
             self.call("setMyCommands", {"commands": list(commands)}, timeout=20)

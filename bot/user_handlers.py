@@ -10,7 +10,7 @@ from . import texts as T
 from .admin_handlers import display_name, handle_admin_command, try_login
 from .service import Service, USER_BOT
 from .telegram import BotAPI, safe_send
-from .utils import contact_keyboard, esc, remove_keyboard, restart_keyboard
+from .utils import contact_keyboard, esc, remove_keyboard, restart_keyboard, webapp_keyboard
 from .validators import clean_name, normalize_phone, pretty_phone
 
 log = logging.getLogger(__name__)
@@ -20,6 +20,7 @@ STATE_PHONE = "phone"
 
 BOT_COMMAND_LIST = [
     {"command": "start", "description": "So'rov qoldirish"},
+    {"command": "audit", "description": "Sotuv bo'limi auditi (6 daqiqa)"},
     {"command": "bekor", "description": "Bekor qilish"},
     {"command": "yordam", "description": "Yordam"},
 ]
@@ -48,7 +49,28 @@ def start_flow(service: Service, api: BotAPI, chat_id: int, user: Dict[str, Any]
     text = (T.GREETING_AGAIN if returning else T.GREETING).format(
         company=esc(service.config.company_name)
     )
+    if not returning and service.config.webapp_enabled:
+        # Birinchi kelgan mijozga auditni ham taklif qilamiz - bitta xabarda,
+        # inline tugma bilan (ism so'rovi holati buzilmaydi).
+        api.send_message(
+            chat_id,
+            text + T.GREETING_AUDIT_HINT,
+            reply_markup=webapp_keyboard(T.BTN_OPEN_AUDIT, service.config.webapp_url),
+        )
+        return
     api.send_message(chat_id, text, reply_markup=remove_keyboard())
+
+
+def send_audit_invite(service: Service, api: BotAPI, chat_id: int) -> bool:
+    """Mini App'ni ochadigan tugmali xabar. WEBAPP_URL bo'lmasa False."""
+    if not service.config.webapp_enabled:
+        return False
+    api.send_message(
+        chat_id,
+        T.AUDIT_INVITE,
+        reply_markup=webapp_keyboard(T.BTN_OPEN_AUDIT, service.config.webapp_url),
+    )
+    return True
 
 
 def _ask_phone(api: BotAPI, chat_id: int, name: str) -> None:
@@ -140,6 +162,10 @@ def handle_message(service: Service, api: BotAPI, message: Dict[str, Any]) -> No
             return
         if command in ("/yordam", "/help"):
             api.send_message(chat_id, T.HELP_USER.format(contact=_contact_hint(service)))
+            return
+        if command in ("/audit", "/app"):
+            if not send_audit_invite(service, api, chat_id):
+                api.send_message(chat_id, T.AUDIT_DISABLED)
             return
         if command == "/id":
             api.send_message(

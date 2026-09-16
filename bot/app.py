@@ -108,17 +108,28 @@ class Application:
         api.set_my_commands(
             user_handlers.BOT_COMMAND_LIST if bot_key == USER_BOT else ADMIN_COMMAND_LIST
         )
+        if bot_key == USER_BOT:
+            # Chatdagi «Menyu» tugmasi Mini App'ni ochadi (WEBAPP_URL bo'lsa).
+            if self.config.webapp_enabled:
+                api.set_chat_menu_button(T.MENU_BUTTON_AUDIT, self.config.webapp_url)
+            else:
+                api.reset_chat_menu_button()
         return True
 
     def run(self) -> int:
-        # Railway/Render: PORT bo'lsa health-check server'ni ENG BOSHDA ishga
-        # tushiramiz - platforma portni darrov kutadi, Telegramga ulanish (getMe)
-        # sekin bo'lsa ham konteyner "o'lik" deb o'chirilmasin.
+        # Railway/Render: PORT bo'lsa web server'ni (health-check + Mini App)
+        # ENG BOSHDA ishga tushiramiz - platforma portni darrov kutadi, Telegramga
+        # ulanish (getMe) sekin bo'lsa ham konteyner "o'lik" deb o'chirilmasin.
         port = os.environ.get("PORT", "").strip()
         if port.isdigit():
-            from .health import start_health_server
+            from .web import start_web_server
 
-            start_health_server(int(port))
+            start_web_server(int(port), self.service)
+        elif self.config.webapp_enabled:
+            log.warning(
+                "WEBAPP_URL berilgan, lekin PORT yo'q - Mini App sahifasi xizmat "
+                "qilinmaydi. Lokalda: PORT=8080 python3 main.py"
+            )
 
         if not self._connect(USER_BOT):
             log.error("So'rov boti ishga tushmadi. To'xtatildi.")
@@ -206,6 +217,8 @@ class Application:
             f"  Admin boti  : @{admin_api.username}" if admin_api else
             "  Admin boti  : yoqilmagan (.env -> ADMIN_BOT_TOKEN)",
             f"  Zayavka boradi: {dest}",
+            f"  Mini App    : {self.config.webapp_url}" if self.config.webapp_enabled else
+            "  Mini App    : o'chiq (.env -> WEBAPP_URL)",
             f"  Adminlar    : 2-botda {recipients_admin} ta, 1-botda {recipients_user} ta",
             f"  Parol       : {self.config.admin_password}",
             "-" * 58,

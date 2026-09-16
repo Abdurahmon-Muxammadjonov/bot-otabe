@@ -61,6 +61,11 @@ def restart_keyboard(button_text: str) -> Dict[str, Any]:
     }
 
 
+def webapp_keyboard(button_text: str, url: str) -> Dict[str, Any]:
+    """Mini App'ni ochadigan inline tugma (initData imzosi bilan ochiladi)."""
+    return {"inline_keyboard": [[{"text": button_text, "web_app": {"url": url}}]]}
+
+
 def remove_keyboard() -> Dict[str, Any]:
     return {"remove_keyboard": True}
 

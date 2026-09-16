@@ -125,7 +125,11 @@ class Storage:
         full_name: str = "",
         language_code: str = "",
         phone_source: str = "text",
+        source: str = "bot",
+        company: str = "",
+        audit: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
+        """Yangi zayavka. source: "bot" (chat oqimi) yoki "webapp" (Mini App auditi)."""
         with self._lock:
             counters = self._data["counters"]
             counters["application_id"] = int(counters.get("application_id") or 0) + 1
@@ -139,6 +143,9 @@ class Storage:
                 "full_name": full_name,
                 "language_code": language_code,
                 "phone_source": phone_source,
+                "source": source,
+                "company": company,
+                "audit": audit,
                 "status": STATUS_NEW,
                 "created_at": time.time(),
                 "handled_by": None,

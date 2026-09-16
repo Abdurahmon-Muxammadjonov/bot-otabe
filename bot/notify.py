@@ -10,8 +10,10 @@ from typing import Any, Dict, List, Optional
 from .config import Config
 from .storage import Storage
 from .telegram import BotAPI, TelegramError
-from .texts import NEW_APPLICATION, STATUS_FOOTER, STATUS_LABELS
-from .utils import esc, fmt_dt
+from .texts import (
+    AUDIT_BLOCK, COMPANY_LINE, NEW_APPLICATION, SOURCE_WEBAPP, STATUS_FOOTER, STATUS_LABELS,
+)
+from .utils import clip, esc, fmt_dt
 from .validators import pretty_phone
 
 log = logging.getLogger(__name__)
@@ -72,14 +74,22 @@ def telegram_link(app: Dict[str, Any]) -> str:
 
 def render_application(app: Dict[str, Any], tz_offset: int) -> str:
     """Admin uchun zayavka matnini yig'adi."""
+    is_webapp = app.get("source") == "webapp"
+    company = app.get("company") or ""
     text = NEW_APPLICATION.format(
         id=app["id"],
+        source=SOURCE_WEBAPP if is_webapp else "",
         name=esc(app.get("name")),
+        company=COMPANY_LINE.format(company=esc(company)) if company else "",
         phone=esc(pretty_phone(app.get("phone", ""))),
         tg=telegram_link(app),
         user_id=int(app.get("user_id") or 0),
         time=fmt_dt(app.get("created_at"), tz_offset),
     )
+    if is_webapp and isinstance(app.get("audit"), dict):
+        from .audit import render_admin_summary  # aylanma importdan qochish
+
+        text += AUDIT_BLOCK.format(summary=render_admin_summary(app["audit"]))
     status = app.get("status", "new")
     if status != "new":
         who = esc(app.get("handled_by_name") or "admin")
@@ -88,7 +98,7 @@ def render_application(app: Dict[str, Any], tz_offset: int) -> str:
             who=who,
             time=fmt_dt(app.get("handled_at"), tz_offset),
         )
-    return text
+    return clip(text)
 
 
 class Notifier:

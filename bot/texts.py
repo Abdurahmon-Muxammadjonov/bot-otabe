@@ -6,6 +6,8 @@ from __future__ import annotations
 BTN_SEND_CONTACT = "📱 Raqamni yuborish"
 BTN_CANCEL = "🚫 Bekor qilish"
 BTN_NEW_REQUEST = "📝 Yangi so'rov qoldirish"
+BTN_OPEN_AUDIT = "🔍 Sotuv auditini boshlash"
+MENU_BUTTON_AUDIT = "🔍 Audit"
 
 # ----------------------------------------------------- foydalanuvchi boti
 GREETING = (
@@ -34,6 +36,30 @@ SUCCESS = (
 )
 
 SUCCESS_CONTACT = "\n\nSavollaringiz bo'lsa: {contact}"
+
+# ------------------------------------------------------------- Mini App
+GREETING_AUDIT_HINT = (
+    "\n\n🔍 Yoki avval <b>6 daqiqalik sotuv auditi</b>dan o'ting — "
+    "sotuvingiz qayerda pul yo'qotayotganini ko'rsatamiz 👇"
+)
+AUDIT_INVITE = (
+    "🔍 <b>Sotuv bo'limi auditi</b>\n\n"
+    "28 ta savol · 6 daqiqa · bepul.\n"
+    "Sotuv bo'limingizning qaysi bo'g'ini pul yo'qotayotganini ko'rsatadi: "
+    "6 blok bo'yicha ball, eng zaif nuqtalar va har biri uchun aniq yechim.\n\n"
+    "Pastdagi tugmani bosing 👇"
+)
+AUDIT_DISABLED = (
+    "🔍 Audit hozircha yoqilmagan.\n"
+    "So'rov qoldirish uchun /start bosing."
+)
+WEBAPP_SUCCESS = (
+    "✅ <b>Audit natijangiz qabul qilindi!</b>  (zayavka #{id})\n\n"
+    "👤 Ism: <b>{name}</b>\n"
+    "📞 Telefon: <code>{phone}</code>\n"
+    "🎯 Ball: <b>{score}/100</b> — {band}\n\n"
+    "To'liq hisobot quyida 👇 Tez orada siz bilan <b>aloqaga chiqamiz</b>. 🤝"
+)
 
 # --------------------------------------------------------------- xatoliklar
 NAME_ERRORS = {
@@ -82,6 +108,7 @@ HELP_USER = (
     "3️⃣ Operatorlarimiz siz bilan bog'lanadi\n\n"
     "Buyruqlar:\n"
     "/start — yangi so'rov\n"
+    "/audit — sotuv bo'limi auditi (6 daqiqa)\n"
     "/bekor — jarayonni bekor qilish\n"
     "/yordam — shu yordam\n"
     "{contact}"
@@ -118,13 +145,18 @@ ADMIN_LOGGED_OUT = "👋 Bildirishnomalar o'chirildi. Qayta ulanish uchun /start
 ADMIN_ALREADY = "✅ Siz allaqachon ulangansiz.\n\n{commands}"
 
 NEW_APPLICATION = (
-    "🆕 <b>Yangi zayavka #{id}</b>\n\n"
+    "🆕 <b>Yangi zayavka #{id}</b>{source}\n\n"
     "👤 <b>Ism:</b> {name}\n"
+    "{company}"
     "📞 <b>Telefon:</b> <code>{phone}</code>\n"
     "👥 <b>Telegram:</b> {tg}\n"
     "🆔 <b>ID:</b> <code>{user_id}</code>\n"
     "🕒 <b>Vaqt:</b> {time}"
 )
+
+SOURCE_WEBAPP = "  ·  🔍 Sotuv auditi"
+COMPANY_LINE = "🏢 <b>Kompaniya:</b> {company}\n"
+AUDIT_BLOCK = "\n\n{summary}"
 
 STATUS_LABELS = {
     "new": "🆕 Yangi",

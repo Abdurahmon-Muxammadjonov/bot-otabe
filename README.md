@@ -7,6 +7,10 @@ Yig'ilgan ma'lumot esa **2-botga (admin boti)** tushadi — o'sha yerda adminlar
 > Agar 2-bot hali sozlanmagan bo'lsa (token bo'sh), zayavka yo'qolmasligi uchun
 > **zaxira sifatida 1-bot adminlariga** boradi. 2-bot ulanishi bilan hammasi 2-botga o'tadi.
 
+Botning ichida **Mini App** ham bor — «🔍 Sotuv bo'limi auditi» (28 savol, 6 daqiqa).
+Mijoz auditdan o'tib, ism/telefonini qoldiradi → bu ham **zayavka** sifatida adminlarga
+tushadi, lekin audit natijasi (ball, zaif nuqtalar) bilan birga. Batafsil: [7-bo'lim](#-7-mini-app-sotuv-auditi).
+
 Hech qanday kutubxona o'rnatish shart emas: faqat **Python 3.8+** kerak.
 
 ---
@@ -75,7 +79,7 @@ Otabek
     Tez orada siz bilan aloqaga chiqamiz. Murojaatingiz uchun rahmat! 🤝
 ```
 
-Mijoz buyruqlari: `/start`, `/bekor`, `/yordam`.
+Mijoz buyruqlari: `/start`, `/audit` (Mini App), `/bekor`, `/yordam`.
 
 ---
 
@@ -126,6 +130,7 @@ Har bir yangi zayavka **2-botga (admin boti)** shu ko'rinishda tushadi:
 | `SUBMIT_COOLDOWN_SEC` | Ikki so'rov orasidagi eng kam vaqt (spamga qarshi) |
 | `MAX_PER_DAY` | Bir mijoz kuniga nechta so'rov qoldira oladi |
 | `TZ_OFFSET_HOURS` | Vaqt mintaqasi (Toshkent = 5) |
+| `WEBAPP_URL` | Mini App ochiq HTTPS manzili (Railway'da avtomatik) |
 
 Matnlarni o'zgartirmoqchi bo'lsangiz — hammasi **`bot/texts.py`** faylida, bir joyda.
 
@@ -148,6 +153,11 @@ bot/
   validators.py          ← ism/telefon tekshiruvi
   texts.py               ← BARCHA MATNLAR shu yerda
   utils.py               ← klaviaturalar, sana, HTML himoyasi
+  web.py                 ← HTTP server: health-check + Mini App + /api/lead
+  audit.py               ← audit ballini hisoblash, initData imzosini tekshirish
+webapp/
+  index.html             ← Mini App sahifasi (dizayn + logika, bitta fayl)
+  audit.json             ← 28 savol, bloklar, tavsiyalar (matnlarni shu yerda tahrirlang)
 data/db.json             ← zayavkalar saqlanadi (nusxa olib turing!)
 logs/bot.log             ← ish jurnali
 ```
@@ -172,6 +182,53 @@ Ha. Doimiy ishlashi uchun botni serverga (VPS) joylash kerak — kerak bo'lsa ay
 
 **Ma'lumotlar qayerda?**
 `data/db.json` faylida. `/eksport` buyrug'i bilan Excel'ga chiqarib olasiz.
+
+---
+
+## 🔍 7. Mini App (sotuv auditi)
+
+Mijoz botda **Menyu** tugmasini, `/audit` buyrug'ini yoki `/start` dagi
+«🔍 Sotuv auditini boshlash» tugmasini bosadi → Telegram ichida ilova ochiladi:
+
+```
+Kirish  →  3 ta kontekst savoli  →  28 savol (6 blok)  →  Natija:
+  • umumiy ball (0–100) va xulosa
+  • 6 blok bo'yicha diagramma
+  • eng zaif 3 nuqta + yechimi
+  • «bu qancha pulga tushmoqda» kalkulyatori
+  • Ism / kompaniya / telefon formasi  →  to'liq hisobot ochiladi
+```
+
+Forma yuborilgach:
+- **Adminlarga** oddiy zayavka kartasi keladi, lekin `🔍 Sotuv auditi` belgisi,
+  kompaniya nomi, ball, bloklar diagrammasi va eng zaif 3 nuqta bilan.
+- **Mijozning chatiga** to'liq hisobot (barcha zaif nuqtalar + tavsiyalar) yuboriladi.
+- `/eksport` CSV'da `Kompaniya`, `Manba`, `Audit balli`, `Audit xulosasi` ustunlari bor.
+
+Texnik jihatlar:
+- Sahifa **botning o'zidan** xizmat qilinadi (`webapp/index.html`), alohida hosting kerak emas.
+- Telegram yuborgan `initData` imzosi bot tokeni bilan **serverda tekshiriladi** —
+  begona joydan zayavka yuborib bo'lmaydi. Ball ham serverda qayta hisoblanadi.
+- Botdagi spam-limitlar (`SUBMIT_COOLDOWN_SEC`, `MAX_PER_DAY`) Mini App'ga ham tegishli.
+- Yarim qolgan audit Telegram CloudStorage'da saqlanadi — mijoz keyin davom ettiradi.
+- Telefonni «📱» tugmasi bilan Telegram'dan bir bosishda olish mumkin.
+- Savollar/tavsiyalar matnini `webapp/audit.json` da o'zgartirasiz — bot qayta ishga
+  tushirilmasa ham yangi matn darrov ishlaydi (ball og'irliklari yig'indisi 100 bo'lsin).
+
+**Lokal kompyuterda sinash.** Telegram faqat HTTPS manzilni ochadi, shuning uchun tunnel kerak:
+
+```bash
+PORT=8080 python3 main.py            # 1-terminal
+ngrok http 8080                      # 2-terminal  (yoki: cloudflared tunnel --url http://localhost:8080)
+```
+
+Tunnel bergan `https://....` manzilni `.env` ga `WEBAPP_URL=` qatoriga yozib botni qayta
+ishga tushiring. Brauzerda `http://localhost:8080` ochsangiz ilova ko'rinadi, lekin forma
+yuborilmaydi (imzo yo'q) — bu normal.
+
+**Ixtiyoriy:** @BotFather → `/newapp` orqali ilovaga qisqa nom bersangiz,
+`https://t.me/<bot>/<nom>` ko'rinishidagi to'g'ridan-to'g'ri havola ham ishlaydi
+(reklama/Instagram uchun qulay). URL sifatida o'sha `WEBAPP_URL` ni bering.
 
 ---
 
@@ -204,6 +261,12 @@ Railway'da **Variables** bo'limiga o'ting va quyidagilarni qo'shing
 | `COMPANY_NAME` | Kompaniya nomi |
 | `CONTACT_INFO` | Aloqa (ixtiyoriy) |
 | `DATA_DIR` | `/data` (pastdagi Volume bilan birga) |
+| `WEBAPP_URL` | bo'sh qoldiring — Railway domeni avtomatik olinadi (3a-qadam) |
+
+### 3a) Mini App ishlashi uchun domen yarating
+Railway → xizmat → **Settings** → **Networking** → **Generate Domain**.
+Shu bilan Railway `RAILWAY_PUBLIC_DOMAIN` o'zgaruvchisini o'zi qo'yadi va bot
+Mini App tugmalarini avtomatik yoqadi. Loglarda `Mini App : https://...` ko'rinadi.
 
 ### 3) Ma'lumot saqlanishi uchun Volume qo'shing ⚠️ MUHIM
 Railway'da fayl tizimi har deploy'da **o'chib ketadi**. Zayavkalar va

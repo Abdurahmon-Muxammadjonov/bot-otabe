@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="uz" data-bot="/*__BOT__*/">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="28 ta savol. Sotuv bo'limingizning qaysi bo'g'ini pul yo'qotayotganini ko'rsatadi.">
+<meta name="robots" content="noindex">
+<title>Sotuv bo'limi auditi</title>
+<script src="https://telegram.org/js/telegram-web-app.js?58"></script>
+<style>
+/* ============================================================
+   Dizayn tokenlari - Telegram temasidan olinadi, bo'lmasa fallback
+   ============================================================ */
+:root{
+  --bg:      var(--tg-theme-secondary-bg-color, #F1F2EE);
+  --card:    var(--tg-theme-section-bg-color, var(--tg-theme-bg-color, #FFFFFF));
+  --ink:     var(--tg-theme-text-color, #121A17);
+  --mute:    var(--tg-theme-hint-color, #6B736E);
+  --sub:     var(--tg-theme-subtitle-text-color, var(--tg-theme-hint-color, #6B736E));
+  --line:    var(--tg-theme-section-separator-color, rgba(0,0,0,.09));
+  --accent:  var(--tg-theme-button-color, #1E6E4E);
+  --accent-ink: var(--tg-theme-button-text-color, #FFFFFF);
+  --link:    var(--tg-theme-link-color, #1E6E4E);
+  --destructive: var(--tg-theme-destructive-text-color, #B3361F);
+  --good:#1E6E4E; --mid:#B07A16; --bad:#B3361F;
+  --good-soft:rgba(30,110,78,.12); --mid-soft:rgba(176,122,22,.14); --bad-soft:rgba(179,54,31,.12);
+  --track: rgba(127,127,127,.16);
+  --r:14px; --r-sm:10px;
+  --pad:16px;
+  --safe-top: var(--tg-content-safe-area-inset-top, 0px);
+  --safe-bottom: max(var(--tg-safe-area-inset-bottom, 0px), env(safe-area-inset-bottom, 0px));
+  --shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 20px -8px rgba(0,0,0,.10);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg: var(--tg-theme-secondary-bg-color, #121416);
+    --card: var(--tg-theme-section-bg-color, var(--tg-theme-bg-color, #1C1F22));
+    --ink: var(--tg-theme-text-color, #F2F4F1);
+    --mute: var(--tg-theme-hint-color, #8E969A);
+    --line: var(--tg-theme-section-separator-color, rgba(255,255,255,.09));
+    --accent: var(--tg-theme-button-color, #3FA37C);
+    --link: var(--tg-theme-link-color, #6FC5A0);
+    --good:#4BB88C; --mid:#D9A03A; --bad:#E0623F;
+    --good-soft:rgba(75,184,140,.16); --mid-soft:rgba(217,160,58,.16); --bad-soft:rgba(224,98,63,.16);
+    --track: rgba(255,255,255,.12);
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -10px rgba(0,0,0,.5);
+  }
+}
+html[data-scheme="dark"]{
+  --good:#4BB88C; --mid:#D9A03A; --bad:#E0623F;
+  --good-soft:rgba(75,184,140,.16); --mid-soft:rgba(217,160,58,.16); --bad-soft:rgba(224,98,63,.16);
+  --track: rgba(255,255,255,.12);
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -10px rgba(0,0,0,.5);
+}
+
+/* ============================================================ base */
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;height:100%}
+body{
+  min-height:100%;
+  background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,system-ui,sans-serif;
+  font-size:16px; line-height:1.5;
+  font-variant-numeric:tabular-nums;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  -webkit-tap-highlight-color:transparent;
+  overscroll-behavior-y:contain;
+  padding-top:var(--safe-top);
+}
+h1,h2,h3{font-weight:700;line-height:1.15;letter-spacing:-.02em}
+h1{font-size:clamp(26px,7vw,34px)}
+h2{font-size:clamp(19px,5vw,23px)}
+h3{font-size:16px;letter-spacing:-.01em}
+p{max-width:60ch}
+button{font:inherit;color:inherit;cursor:pointer;border:none;background:none;touch-action:manipulation}
+input{font:inherit;color:inherit}
+a{color:var(--link)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hide{display:none!important}
+.mute{color:var(--mute)}
+.small{font-size:13.5px}
+
+.wrap{max-width:600px;margin:0 auto;padding:0 var(--pad)}
+.screen{display:none;animation:fade .22s ease}
+.screen.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.page{padding-top:18px;padding-bottom:calc(96px + var(--safe-bottom))}
+.card{background:var(--card);border-radius:var(--r);padding:18px;box-shadow:var(--shadow)}
+.card + .card{margin-top:12px}
+.kicker{display:flex;justify-content:space-between;gap:6px 12px;flex-wrap:wrap;font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px}
+.kicker span:last-child{text-align:right}
+
+/* ============================================================ buttons */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;min-height:50px;padding:12px 18px;border-radius:12px;
+  background:var(--accent);color:var(--accent-ink);
+  font-weight:600;font-size:16px;letter-spacing:-.01em;
+  transition:transform .08s,opacity .15s,background .15s;
+}
+.btn:active{transform:scale(.985)}
+.btn[disabled]{opacity:.45;cursor:not-allowed;transform:none}
+.btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+.btn.soft{background:var(--track);color:var(--ink)}
+.btn.sm{min-height:40px;padding:8px 14px;font-size:14.5px;width:auto;border-radius:10px}
+.btn .spin{width:18px;height:18px;border:2.5px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.stack{display:grid;gap:10px}
+.linkbtn{color:var(--link);font-weight:500;font-size:15px;padding:6px 0}
+
+/* fallback pastki panel (Telegram MainButton bo'lmasa) */
+#fallbackBar{
+  position:fixed;left:0;right:0;bottom:0;z-index:20;
+  padding:10px var(--pad) calc(10px + var(--safe-bottom));
+  background:color-mix(in srgb,var(--card) 88%,transparent);
+  -webkit-backdrop-filter:saturate(180%) blur(14px);backdrop-filter:saturate(180%) blur(14px);
+  border-top:1px solid var(--line);
+}
+#fallbackBar .btn{max-width:600px;margin:0 auto;display:flex}
+@supports not (background:color-mix(in srgb,red 50%,blue)){#fallbackBar{background:var(--card)}}
+
+/* ============================================================ intro */
+.hero{padding:10px 0 6px}
+.hero h1{max-width:15ch;margin:6px 0 12px}
+.lede{font-size:16.5px;color:var(--sub);margin-bottom:18px}
+.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:14px}
+.fact{background:var(--card);border-radius:var(--r-sm);padding:12px 10px;text-align:center;box-shadow:var(--shadow)}
+.fact b{display:block;font-size:20px;font-weight:700;letter-spacing:-.02em}
+.fact span{font-size:11.5px;color:var(--mute);line-height:1.25;display:block;margin-top:2px}
+@media (max-width:360px){.facts{grid-template-columns:repeat(2,1fr)}}
+.resume{display:flex;gap:12px;align-items:center;margin-top:12px;padding:14px 16px;border-radius:var(--r);background:var(--good-soft);color:var(--ink)}
+.resume .ico{flex:none;width:36px;height:36px;border-radius:50%;background:var(--good);color:#fff;display:grid;place-items:center;font-size:18px}
+.resume b{display:block;font-size:15px}
+.resume span{font-size:13px;color:var(--mute)}
+
+/* weighted columns (imzo grafik) */
+.cols{display:flex;align-items:flex-end;gap:4px;height:112px;border-bottom:1.5px solid var(--line);padding-bottom:0}
+.col{position:relative;background:var(--track);height:100%;display:flex;align-items:flex-end;border-radius:4px 4px 0 0;overflow:hidden}
+.col i{display:block;width:100%;height:0;background:var(--mute);transition:height .55s cubic-bezier(.2,.8,.2,1),background .25s}
+.col.s-good i{background:var(--good)}.col.s-mid i{background:var(--mid)}.col.s-bad i{background:var(--bad)}
+.cap{font-size:12.5px;color:var(--mute);margin-top:10px}
+
+/* ============================================================ options */
+.qlabel{font-size:12.5px;color:var(--mute);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.qtext{font-size:clamp(19px,5.4vw,23px);font-weight:700;letter-spacing:-.02em;line-height:1.22}
+.qhint{font-size:14px;color:var(--mute);margin-top:8px}
+.opts{display:grid;gap:8px;margin-top:16px}
+.opt{
+  position:relative;text-align:left;background:var(--card);
+  padding:14px 14px 14px 46px;border-radius:12px;
+  display:flex;align-items:center;min-height:52px;
+  box-shadow:var(--shadow),inset 0 0 0 1.5px transparent;
+  transition:box-shadow .12s,transform .08s;
+  font-size:15.5px;line-height:1.35;
+}
+.opt:active{transform:scale(.99)}
+.opt .mark{
+  position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  width:20px;height:20px;border:1.5px solid var(--mute);border-radius:50%;
+  transition:border-color .12s,background .12s;
+}
+.opt .mark::after{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--accent-ink);transform:scale(0);transition:transform .15s}
+.opt[aria-pressed="true"]{box-shadow:var(--shadow),inset 0 0 0 1.5px var(--accent)}
+.opt[aria-pressed="true"] .mark{border-color:var(--accent);background:var(--accent)}
+.opt[aria-pressed="true"] .mark::after{transform:scale(1)}
+.pblock{margin-bottom:26px}
+
+/* ============================================================ audit */
+.strip{display:flex;gap:3px;height:6px;margin-bottom:14px}
+.strip .col{height:100%;border-radius:3px;align-items:stretch}
+.strip .col i{height:100%!important;opacity:0;transition:opacity .3s,background .3s}
+.strip .col.s-good i,.strip .col.s-mid i,.strip .col.s-bad i{opacity:1}
+.progress{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:center;margin-bottom:16px;font-size:13px;color:var(--mute)}
+.progress .num{font-weight:600;color:var(--ink);white-space:nowrap}
+.progress .blk{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;min-width:0}
+.bar{grid-column:1/-1;height:4px;background:var(--track);border-radius:2px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:2px;transition:width .3s}
+.nav{margin-top:18px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.live{display:flex;align-items:center;justify-content:space-between;margin-top:26px;padding:12px 14px;border-radius:var(--r-sm);background:var(--card);box-shadow:var(--shadow);font-size:13.5px;color:var(--mute)}
+.live b{font-size:18px;color:var(--ink)}
+
+/* ============================================================ result */
+.verdict{display:flex;gap:18px;align-items:center}
+.ring{position:relative;flex:none;width:112px;height:112px}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:9;stroke-linecap:round}
+.ring .tr{stroke:var(--track)}
+.ring .pr{stroke:var(--good);stroke-dasharray:314;stroke-dashoffset:314;transition:stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1)}
+.ring .n{position:absolute;inset:0;display:grid;place-items:center;font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.ring .n small{font-size:11px;font-weight:600;color:var(--mute);letter-spacing:.04em;margin-top:2px}
+.band{font-size:19px;font-weight:700;letter-spacing:-.02em;line-height:1.2}
+.band.s-good{color:var(--good)}.band.s-mid{color:var(--mid)}.band.s-bad{color:var(--bad)}
+.vtext{margin-top:14px;font-size:15px;color:var(--sub)}
+.sec{margin-top:26px;margin-bottom:10px}
+.sec h2{margin-bottom:4px}
+.sec p{font-size:14px;color:var(--mute)}
+.brow{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
+.brow .pc em{display:block;font-style:normal;font-weight:500;font-size:11.5px;color:var(--mute)}
+.brow:first-child{border-top:none;padding-top:0}
+.brow .nm{font-size:14.5px;font-weight:600}
+.brow .nm em{display:block;font-style:normal;font-weight:400;font-size:12.5px;color:var(--mute)}
+.brow .pc{text-align:right;font-weight:700;font-size:15px}
+.brow .track{grid-column:1/-1;height:6px;background:var(--track);border-radius:3px;overflow:hidden}
+.brow .track i{display:block;height:100%;width:0;border-radius:3px;transition:width .7s cubic-bezier(.2,.8,.2,1)}
+.s-good.fill{background:var(--good)}.s-mid.fill{background:var(--mid)}.s-bad.fill{background:var(--bad)}
+.gaps{display:grid;gap:10px}
+.gap{background:var(--card);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow);border-left:4px solid var(--bad)}
+.gap.w-mid{border-left-color:var(--mid)}
+.gap .t{font-weight:700;font-size:15.5px;letter-spacing:-.01em;line-height:1.3}
+.gap .cur{font-size:13px;color:var(--mute);margin-top:4px}
+.gap .fx{font-size:14.5px;margin-top:10px;color:var(--sub)}
+.gap .cost{display:inline-block;margin-top:10px;font-size:12px;font-weight:600;padding:3px 8px;border-radius:6px;background:var(--bad-soft);color:var(--bad)}
+.gap.w-mid .cost{background:var(--mid-soft);color:var(--mid)}
+.gh{margin:18px 0 6px;font-size:12.5px;color:var(--mute);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+
+/* forms */
+.field{margin-bottom:12px}
+.field label{display:block;font-size:13px;color:var(--mute);margin-bottom:6px}
+.field input{
+  width:100%;min-height:48px;padding:12px 14px;border-radius:12px;
+  background:var(--bg);border:1.5px solid transparent;color:var(--ink);font-size:16px;
+  transition:border-color .12s,box-shadow .12s;
+}
+.field input::placeholder{color:var(--mute);opacity:.8}
+.field input:focus{outline:none;border-color:var(--accent)}
+.field.err input{border-color:var(--destructive)}
+.field .fe{font-size:13px;color:var(--destructive);margin-top:6px;display:none}
+.field.err .fe{display:block}
+.inrow{display:flex;gap:8px}
+.inrow input{flex:1;min-width:0}
+.money-out{display:none;margin-top:14px;padding:14px;border-radius:var(--r-sm);background:var(--good-soft)}
+.money-out.on{display:block}
+.money-out b{display:block;font-size:22px;font-weight:800;letter-spacing:-.02em;color:var(--good)}
+.money-out span{display:block;font-size:13px;color:var(--sub);margin-top:6px}
+.fine{font-size:12.5px;color:var(--mute);margin-top:10px}
+.err{color:var(--destructive);font-size:14px;margin:6px 0 10px;display:none}
+.err.on{display:block}
+.thanks{display:none;padding:14px 16px;border-radius:var(--r-sm);background:var(--good-soft);margin-top:4px}
+.thanks.on{display:block}
+.thanks b{display:block;margin-bottom:4px}
+.locked{position:relative}
+.locked .veil{
+  position:absolute;inset:-6px;display:grid;place-items:center;text-align:center;padding:20px;
+  border-radius:var(--r);
+  background:linear-gradient(to bottom,transparent,var(--bg) 70%);
+  font-size:14px;color:var(--mute);
+}
+.locked .veil span{background:var(--card);padding:10px 14px;border-radius:10px;box-shadow:var(--shadow);color:var(--ink);max-width:32ch}
+.locked.open .veil,.locked.open .skel{display:none}
+.skel{display:grid;gap:10px}
+.skel div{height:74px;border-radius:var(--r);background:var(--card);opacity:.6}
+.footer{margin-top:34px;padding-top:14px;border-top:1px solid var(--line);font-size:12.5px;color:var(--mute);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.notice{margin-top:12px;padding:12px 14px;border-radius:var(--r-sm);background:var(--mid-soft);font-size:13.5px}
+.notice a{font-weight:600}
+
+/* toast */
+#toast{position:fixed;left:50%;bottom:calc(84px + var(--safe-bottom));transform:translate(-50%,10px);opacity:0;z-index:30;
+  background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;font-weight:500;
+  pointer-events:none;transition:opacity .2s,transform .2s;max-width:calc(100% - 32px);text-align:center}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ============ 1. INTRO ============ -->
+<section class="screen on" id="s-intro">
+  <div class="wrap page">
+    <div class="hero">
+      <div class="kicker"><span>Sotuv bo'limi auditi</span><span>28 savol · 6 daqiqa · bepul</span></div>
+      <h1>Sotuvingiz qayerda oqmoqda?</h1>
+      <p class="lede">Reklama ishlaydi, lidlar keladi, lekin pul kutilgandek kirmaydi. Sabab odatda sotuvchida emas — tizimning bitta bo'g'inida. Bu tekshiruv o'sha bo'g'inni nomma-nom ko'rsatadi.</p>
+    </div>
+
+    <div class="resume hide" id="resumeBox" role="status">
+      <div class="ico">↻</div>
+      <div style="flex:1;min-width:0"><b>Tugallanmagan audit bor</b><span id="resumeInfo"></span></div>
+      <button class="btn sm soft" type="button" onclick="discardSaved()">O'chirish</button>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="small mute" style="margin-bottom:12px">Natija shu ko'rinishda chiqadi — 6 ta blok, og'irligiga qarab</div>
+      <div class="cols" id="demoCols" aria-hidden="true"></div>
+      <div class="cap">Ustun kengligi — blokning umumiy ballga ta'siri. Balandligi — sizning natijangiz.</div>
+    </div>
+
+    <div class="facts">
+      <div class="fact"><b>28</b><span>tekshiruv nuqtasi</span></div>
+      <div class="fact"><b>6</b><span>blok bo'yicha ball</span></div>
+      <div class="fact"><b>3</b><span>eng zaif joy va yechimi</span></div>
+      <div class="fact"><b>0 so'm</b><span>to'liq hisobot</span></div>
+    </div>
+
+    <div class="notice hide" id="browserNotice">
+      Siz ilovani brauzerda ochdingiz. Natijani olish uchun uni <a id="botLink" href="#">Telegram botida</a> oching — hisobot chatingizga keladi.
+    </div>
+    <p class="small mute" style="margin-top:16px;text-align:center">Ro'yxatdan o'tish shart emas</p>
+  </div>
+</section>
+
+<!-- ============ 2. PROFILE ============ -->
+<section class="screen" id="s-profile">
+  <div class="wrap page">
+    <div class="kicker"><span>Kontekst</span><span>3 ta savol</span></div>
+    <div id="profileBox"></div>
+  </div>
+</section>
+
+<!-- ============ 3. AUDIT ============ -->
+<section class="screen" id="s-audit">
+  <div class="wrap page">
+    <div class="strip" id="stripCols" aria-hidden="true"></div>
+    <div class="progress">
+      <span class="num" id="pNum">1 / 28</span>
+      <span class="blk" id="pBlk"></span>
+      <span class="bar"><i id="pBar"></i></span>
+    </div>
+    <h2 class="qtext" id="qText"></h2>
+    <div class="qhint" id="qHint"></div>
+    <div class="opts" id="qOpts" role="radiogroup"></div>
+    <div class="nav">
+      <button class="linkbtn" id="btnBack" type="button" onclick="prevQ()">← Orqaga</button>
+      <button class="linkbtn hide" id="btnSkipFwd" type="button" onclick="nextQ()">Keyingisi →</button>
+    </div>
+    <div class="live"><span>Joriy umumiy ball</span><b id="liveTotal">0</b></div>
+  </div>
+</section>
+
+<!-- ============ 4. RESULT ============ -->
+<section class="screen" id="s-result">
+  <div class="wrap page">
+    <div class="kicker"><span>Audit natijasi</span><span id="rMeta"></span></div>
+
+    <div class="card">
+      <div class="verdict">
+        <div class="ring">
+          <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="tr" cx="60" cy="60" r="50"/><circle class="pr" id="rRing" cx="60" cy="60" r="50"/></svg>
+          <div class="n"><span id="rScore">0</span><small>/ 100</small></div>
+        </div>
+        <div style="min-width:0">
+          <div class="band" id="rBand"></div>
+          <div class="small mute" style="margin-top:4px">100 ballik shkala bo'yicha</div>
+        </div>
+      </div>
+      <p class="vtext" id="rText"></p>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="cols" id="rCols" aria-hidden="true"></div>
+      <div class="cap" style="margin-bottom:14px">Ustun kengligi — blokning og'irligi, balandligi — natijangiz.</div>
+      <div id="rBlocks"></div>
+    </div>
+
+    <div class="sec">
+      <h2>Eng ko'p pul yo'qotayotgan 3 ta nuqta</h2>
+      <p>Ballning eng katta qismi shu yerda yo'qolmoqda.</p>
+    </div>
+    <div class="gaps" id="rTop3"></div>
+
+    <div class="sec">
+      <h2>Bu qancha pulga tushmoqda?</h2>
+      <p>O'rtacha bitim summangizni kiriting — hozirgi lidlaringizdan qancha qo'shimcha bitim olish mumkinligini taxminan hisoblaymiz.</p>
+    </div>
+    <div class="card">
+      <div class="field" style="margin:0">
+        <div class="inrow">
+          <input type="text" inputmode="numeric" id="avgCheck" placeholder="O'rtacha chek, so'm" aria-label="O'rtacha chek" autocomplete="off">
+          <button class="btn sm" type="button" onclick="calcMoney()">Hisoblash</button>
+        </div>
+      </div>
+      <div class="money-out" id="moneyOut"><b id="moneyVal"></b><span id="moneyNote"></span></div>
+    </div>
+
+    <div class="sec" id="gateHead">
+      <h2>To'liq yo'l xaritasi</h2>
+      <p>Yuqorida 3 ta nuqta ko'rsatildi. To'liq hisobotda barcha zaif nuqtalar blokma-blok, har biri uchun aniq qadam bilan chiqadi — Telegram chatingizga ham yuboriladi.</p>
+    </div>
+    <div class="card" id="gate">
+      <form id="leadForm" novalidate onsubmit="event.preventDefault();submitLead()">
+        <div class="field" id="fWrapName"><label for="fName">Ismingiz</label><input id="fName" autocomplete="name" maxlength="60" enterkeyhint="next"><div class="fe" id="feName"></div></div>
+        <div class="field" id="fWrapCompany"><label for="fCompany">Kompaniya <span class="mute">(ixtiyoriy)</span></label><input id="fCompany" autocomplete="organization" maxlength="80" enterkeyhint="next"><div class="fe"></div></div>
+        <div class="field" id="fWrapPhone">
+          <label for="fPhone">Telefon</label>
+          <div class="inrow">
+            <input id="fPhone" inputmode="tel" autocomplete="tel" placeholder="+998 __ ___ __ __" maxlength="20" enterkeyhint="done">
+            <button class="btn sm soft hide" type="button" id="btnContact" onclick="requestContact()" title="Raqamni Telegramdan olish">📱</button>
+          </div>
+          <div class="fe" id="fePhone"></div>
+        </div>
+        <div class="err" id="fErr" role="alert"></div>
+        <button class="btn hide" id="fBtn" type="submit" tabindex="-1" aria-hidden="true">To'liq hisobotni olish</button>
+      </form>
+      <p class="fine">Raqamingiz faqat shu hisobot yuzasidan bog'lanish uchun ishlatiladi. Spam yo'q.</p>
+      <div class="thanks" id="fThanks"><b>✅ Hisobot ochildi</b>To'liq ro'yxat pastda. Nusxasi Telegram chatingizga yuborildi — jamoaga uzatsangiz bo'ladi.</div>
+    </div>
+
+    <div class="sec">
+      <h2>Barcha zaif nuqtalar</h2>
+      <p>Blok bo'yicha, ta'siri katta bo'lganidan boshlab.</p>
+    </div>
+    <div class="locked" id="lockBox">
+      <div class="skel" aria-hidden="true"><div></div><div></div><div></div></div>
+      <div id="rFull" class="gaps"></div>
+      <div class="veil"><span>Yuqoridagi formani to'ldiring — ro'yxat to'liq ochiladi</span></div>
+    </div>
+
+    <div class="stack" style="margin-top:26px">
+      <button class="btn ghost" type="button" onclick="restart()">Qaytadan boshlash</button>
+    </div>
+
+    <div class="footer">
+      <span>Sotuv bo'limi auditi</span>
+      <span>Natija javoblaringizga asoslangan taxminiy baho.</span>
+    </div>
+  </div>
+</section>
+
+<div id="fallbackBar" class="hide"><button class="btn" id="fallbackBtn" type="button"></button></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ==========================================================
+   MA'LUMOT - server sahifani berayotganda webapp/audit.json
+   ni shu yerga joylaydi. Fayl to'g'ridan-to'g'ri ochilsa - fetch.
+   ========================================================== */
+let BANK = /*__AUDIT_DATA__*/null;
+const SAVE_KEY = 'audit_v1';
+
+/* ---------- Telegram ---------- */
+const tg = window.Telegram && window.Telegram.WebApp;
+const inTelegram = !!(tg && tg.initData);            // imzolangan ochilish
+const tgUI = !!(tg && tg.platform && tg.platform !== 'unknown');
+const ver = v => !!(tg && tg.isVersionAtLeast && tg.isVersionAtLeast(v));
+const haptic = (kind, style) => { try { if (!ver('6.1')) return; kind === 'impact' ? tg.HapticFeedback.impactOccurred(style || 'light') : kind === 'select' ? tg.HapticFeedback.selectionChanged() : tg.HapticFeedback.notificationOccurred(style || 'success'); } catch (e) {} };
+
+if (tg) {
+  try {
+    tg.ready(); tg.expand();
+    if (ver('6.1')) { tg.setHeaderColor('secondary_bg_color'); tg.setBackgroundColor('secondary_bg_color'); }
+    if (ver('7.7')) tg.disableVerticalSwipes();
+    document.documentElement.dataset.scheme = tg.colorScheme || '';
+    tg.onEvent('themeChanged', () => { document.documentElement.dataset.scheme = tg.colorScheme || ''; });
+  } catch (e) {}
+}
+
+/* ---------- UI abstraksiyasi: MainButton / BackButton yoki fallback ---------- */
+const $ = s => document.querySelector(s);
+const ui = {
+  _mainFn: null, _backFn: null,
+  main(text, fn, opts) {
+    opts = opts || {}; this._mainFn = fn;
+    const active = opts.enabled !== false;
+    if (tgUI) {
+      const mb = tg.MainButton;
+      mb.setParams({ text: text, is_visible: true, is_active: active });
+      if (opts.progress) mb.showProgress(false); else mb.hideProgress();
+    } else {
+      const bar = $('#fallbackBar'), b = $('#fallbackBtn');
+      bar.classList.remove('hide'); b.disabled = !active;
+      b.innerHTML = opts.progress ? '<span class="spin"></span> ' + text : text;
+    }
+  },
+  hideMain() {
+    this._mainFn = null;
+    if (tgUI) { tg.MainButton.hideProgress(); tg.MainButton.hide(); }
+    else $('#fallbackBar').classList.add('hide');
+  },
+  back(fn) {
+    this._backFn = fn;
+    if (tgUI && ver('6.1')) { fn ? tg.BackButton.show() : tg.BackButton.hide(); }
+  },
+  closingConfirm(on) { try { if (ver('6.2')) on ? tg.enableClosingConfirmation() : tg.disableClosingConfirmation(); } catch (e) {} }
+};
+if (tgUI) {
+  tg.onEvent('mainButtonClicked', () => ui._mainFn && ui._mainFn());
+  tg.onEvent('backButtonClicked', () => ui._backFn && ui._backFn());
+}
+$('#fallbackBtn').addEventListener('click', () => ui._mainFn && ui._mainFn());
+
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); }
+
+/* ---------- saqlash: CloudStorage -> localStorage ---------- */
+const store = {
+  get(cb) {
+    if (tg && ver('6.9') && tg.CloudStorage) {
+      tg.CloudStorage.getItem(SAVE_KEY, (err, v) => cb(!err && v ? safeParse(v) : this._local()));
+    } else cb(this._local());
+  },
+  set(obj) {
+    const raw = JSON.stringify(obj);
+    try { localStorage.setItem(SAVE_KEY, raw); } catch (e) {}
+    if (tg && ver('6.9') && tg.CloudStorage) { try { tg.CloudStorage.setItem(SAVE_KEY, raw, () => {}); } catch (e) {} }
+  },
+  clear() {
+    try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+    if (tg && ver('6.9') && tg.CloudStorage) { try { tg.CloudStorage.removeItem(SAVE_KEY, () => {}); } catch (e) {} }
+  },
+  _local() { try { return safeParse(localStorage.getItem(SAVE_KEY)); } catch (e) { return null; } }
+};
+function safeParse(v) { try { return JSON.parse(v); } catch (e) { return null; } }
+
+/* ---------- holat ---------- */
+let PROFILE, BLOCKS, Q, BANDS;
+let profile = {}, answers = [], idx = 0, leadSent = false, avgCheckValue = null, submitting = false;
+let screenName = 'intro';
+
+const blockOf = id => BLOCKS.find(b => b.id === id);
+const cls = p => p >= 0.75 ? 's-good' : p >= 0.45 ? 's-mid' : 's-bad';
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function go(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  $('#s-' + name).classList.add('on');
+  screenName = name;
+  window.scrollTo(0, 0);
+  if (name === 'intro') { ui.back(null); ui.closingConfirm(false); }
+  if (name === 'profile') { ui.back(() => go_intro()); ui.closingConfirm(true); }
+  if (name === 'audit') { ui.back(prevQ); ui.closingConfirm(true); }
+  if (name === 'result') { ui.back(null); }
+}
+function go_intro() { ui.hideMain(); go('intro'); showIntro(); }
+
+/* ---------- boot ---------- */
+function boot() {
+  PROFILE = BANK.profile; BLOCKS = BANK.blocks; Q = BANK.questions; BANDS = BANK.bands;
+  answers = new Array(Q.length).fill(null);
+  buildDemo();
+  renderProfile();
+  buildStrip();
+  if (!inTelegram) {
+    $('#browserNotice').classList.remove('hide');
+  }
+  if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+    const u = tg.initDataUnsafe.user;
+    $('#fName').value = [u.first_name, u.last_name].filter(Boolean).join(' ').slice(0, 60);
+  }
+  if (tg && ver('6.9')) $('#btnContact').classList.remove('hide');
+  store.get(saved => { if (saved && saved.v === 1 && Array.isArray(saved.answers) && saved.answers.length === Q.length) restoreSaved(saved); showIntro(); });
+}
+let savedState = null;
+function restoreSaved(s) {
+  const answered = s.answers.filter(a => a !== null).length;
+  const hasProfile = Object.keys(s.profile || {}).length === PROFILE.length;
+  if (!answered && !hasProfile) return;
+  savedState = s;
+  $('#resumeInfo').textContent = answered === Q.length ? 'Natija tayyor — ko\'rish' : answered ? answered + ' / ' + Q.length + ' savolga javob berilgan' : 'Kontekst savollari to\'ldirilgan';
+  $('#resumeBox').classList.remove('hide');
+}
+function showIntro() {
+  if (savedState) ui.main('Davom ettirish', resumeSaved);
+  else ui.main('Tekshiruvni boshlash', () => { haptic('impact', 'medium'); go('profile'); updateProfileMain(); });
+}
+function resumeSaved() {
+  profile = Object.assign({}, savedState.profile || {});
+  answers = savedState.answers.slice();
+  renderProfile();
+  const hasProfile = Object.keys(profile).length === PROFILE.length;
+  if (!hasProfile) { go('profile'); updateProfileMain(); return; }
+  const first = answers.indexOf(null);
+  if (first === -1) { showResult(); return; }
+  idx = first; startAudit(false);
+}
+function discardSaved() { savedState = null; store.clear(); $('#resumeBox').classList.add('hide'); showIntro(); haptic('impact'); }
+function persist() { store.set({ v: 1, profile: profile, answers: answers, ts: Date.now() }); }
+
+/* ---------- demo ustunlar ---------- */
+function buildDemo() {
+  const demo = [0.55, 0.3, 0.7, 0.25, 0.15, 0.6];
+  const c = $('#demoCols'); c.innerHTML = '';
+  BLOCKS.forEach((b, i) => {
+    const col = document.createElement('div');
+    col.className = 'col ' + cls(demo[i]); col.style.flex = b.w; col.innerHTML = '<i></i>';
+    c.appendChild(col);
+    setTimeout(() => { col.querySelector('i').style.height = (demo[i] * 100) + '%'; }, 150 + i * 90);
+  });
+}
+
+/* ---------- profil ---------- */
+function renderProfile() {
+  const box = $('#profileBox'); box.innerHTML = '';
+  PROFILE.forEach((p, pi) => {
+    const d = document.createElement('div'); d.className = 'pblock';
+    d.innerHTML = '<div class="qlabel">' + (pi + 1) + ' / ' + PROFILE.length + '</div><h2 class="qtext" style="font-size:clamp(18px,5vw,21px)">' + esc(p.q) + '</h2>';
+    const wrap = document.createElement('div'); wrap.className = 'opts';
+    p.o.forEach((o, oi) => {
+      const b = document.createElement('button');
+      b.className = 'opt'; b.type = 'button'; b.setAttribute('role', 'radio');
+      b.setAttribute('aria-pressed', profile[p.key] === oi ? 'true' : 'false');
+      b.innerHTML = '<span class="mark"></span><span>' + esc(o) + '</span>';
+      b.onclick = () => {
+        wrap.querySelectorAll('.opt').forEach(x => x.setAttribute('aria-pressed', 'false'));
+        b.setAttribute('aria-pressed', 'true');
+        profile[p.key] = oi; haptic('select'); persist(); updateProfileMain();
+        // keyingi savolga silliq o'tish
+        const next = d.nextElementSibling;
+        if (next) setTimeout(() => next.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+      };
+      wrap.appendChild(b);
+    });
+    d.appendChild(wrap); box.appendChild(d);
+  });
+}
+function profileDone() { return PROFILE.every(p => Number.isInteger(profile[p.key])); }
+function updateProfileMain() { ui.main('Savollarga o\'tish', () => { if (profileDone()) { haptic('impact', 'medium'); idx = answers.indexOf(null) === -1 ? 0 : answers.indexOf(null); startAudit(true); } }, { enabled: profileDone() }); }
+
+function startAudit(fromStart) {
+  if (fromStart) idx = 0;
+  ui.hideMain(); renderQ(); go('audit');
+}
+
+/* ---------- jonli ustunlar ---------- */
+function buildStrip() {
+  const c = $('#stripCols'); c.innerHTML = '';
+  BLOCKS.forEach(b => {
+    const col = document.createElement('div');
+    col.className = 'col'; col.style.flex = b.w; col.dataset.b = b.id; col.innerHTML = '<i></i>';
+    c.appendChild(col);
+  });
+}
+function blockScores() {
+  const out = {};
+  BLOCKS.forEach(b => {
+    let got = 0, max = 0, ans = 0;
+    Q.forEach((q, i) => { if (q.b !== b.id) return; max += q.w; if (answers[i] !== null) { got += q.w * q.a[answers[i]][1]; ans++; } });
+    out[b.id] = { pct: max ? got / max : 0, got: got, max: max, answered: ans };
+  });
+  return out;
+}
+function updateLive() {
+  const s = blockScores(); let total = 0;
+  BLOCKS.forEach(b => {
+    total += s[b.id].got;
+    const col = document.querySelector('#stripCols .col[data-b="' + b.id + '"]');
+    if (col) col.className = 'col ' + (s[b.id].answered ? cls(s[b.id].pct) : '');
+  });
+  $('#liveTotal').textContent = Math.round(total);
+}
+function total() { let t = 0; Q.forEach((q, i) => { if (answers[i] !== null) t += q.w * q.a[answers[i]][1]; }); return t; }
+
+/* ---------- savol ---------- */
+function renderQ() {
+  const q = Q[idx], b = blockOf(q.b);
+  $('#pNum').textContent = (idx + 1) + ' / ' + Q.length;
+  $('#pBlk').textContent = b.name;
+  $('#pBar').style.width = (idx / Q.length * 100) + '%';
+  $('#qText').textContent = q.t;
+  $('#qHint').textContent = q.h || '';
+  $('#qHint').style.display = q.h ? 'block' : 'none';
+  $('#btnBack').textContent = idx === 0 ? '← Kontekstga' : '← Orqaga';
+  $('#btnSkipFwd').classList.toggle('hide', answers[idx] === null);
+  const box = $('#qOpts'); box.innerHTML = '';
+  q.a.forEach((o, oi) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt'; btn.type = 'button'; btn.setAttribute('role', 'radio');
+    btn.setAttribute('aria-pressed', answers[idx] === oi ? 'true' : 'false');
+    btn.innerHTML = '<span class="mark"></span><span>' + esc(o[0]) + '</span>';
+    btn.onclick = () => {
+      if (answers[idx] === oi && box.dataset.lock) return;
+      answers[idx] = oi; box.dataset.lock = '1';
+      box.querySelectorAll('.opt').forEach(x => x.setAttribute('aria-pressed', 'false'));
+      btn.setAttribute('aria-pressed', 'true');
+      haptic('select'); updateLive(); persist();
+      setTimeout(() => { delete box.dataset.lock; nextQ(); }, 200);
+    };
+    box.appendChild(btn);
+  });
+  updateLive();
+}
+function nextQ() {
+  if (idx < Q.length - 1) { idx++; renderQ(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  else if (answers.indexOf(null) === -1) showResult();
+  else { idx = answers.indexOf(null); renderQ(); toast('Bitta savol javobsiz qolgan'); }
+}
+function prevQ() {
+  if (idx > 0) { idx--; renderQ(); }
+  else { go('profile'); updateProfileMain(); }
+}
+
+/* ---------- natija ---------- */
+function showResult() {
+  const t = Math.round(total());
+  const band = BANDS.find(b => t >= b.min);
+  const k = cls(t / 100);
+  $('#rScore').textContent = t;
+  const ring = $('#rRing'); ring.style.stroke = 'var(--' + k.slice(2) + ')';
+  requestAnimationFrame(() => setTimeout(() => { ring.style.strokeDashoffset = 314 - 314 * t / 100; }, 80));
+  $('#rBand').textContent = band.t; $('#rBand').className = 'band ' + k;
+  $('#rText').textContent = band.d;
+  $('#rMeta').textContent = [PROFILE[0].o[profile.sector], PROFILE[1].o[profile.team]].filter(Boolean).join(' · ');
+
+  const s = blockScores();
+  const rc = $('#rCols'); rc.innerHTML = '';
+  const rb = $('#rBlocks'); rb.innerHTML = '';
+  BLOCKS.forEach((b, i) => {
+    const p = s[b.id].pct, kk = cls(p);
+    const col = document.createElement('div'); col.className = 'col ' + kk; col.style.flex = b.w; col.innerHTML = '<i></i>'; rc.appendChild(col);
+    setTimeout(() => { col.querySelector('i').style.height = (p * 100) + '%'; }, 120 + i * 80);
+    const row = document.createElement('div'); row.className = 'brow';
+    row.innerHTML = '<div class="nm">' + esc(b.name) + '<em>' + esc(b.note) + '</em></div><div class="pc">' + Math.round(p * 100) + '%<em>' + Math.round(s[b.id].got) + '/' + s[b.id].max + '</em></div><div class="track"><i class="fill ' + kk + '"></i></div>';
+    rb.appendChild(row);
+    setTimeout(() => { row.querySelector('i').style.width = (p * 100) + '%'; }, 200 + i * 80);
+  });
+
+  const gaps = Q.map((q, i) => ({ q: q, i: i, lost: q.w * (1 - q.a[answers[i]][1]), cur: q.a[answers[i]][0] }))
+    .filter(g => g.lost > 0.01).sort((a, b) => b.lost - a.lost);
+  $('#rTop3').innerHTML = '';
+  if (!gaps.length) $('#rTop3').innerHTML = '<div class="gap" style="border-left-color:var(--good)"><div class="t">Zaif nuqta topilmadi</div><div class="fx">Barcha bandlarda maksimal ball. Endi diqqatni suhbat sifatini chuqurroq o\'lchashga qarating.</div></div>';
+  gaps.slice(0, 3).forEach(g => $('#rTop3').appendChild(gapEl(g)));
+  window._gaps = gaps;
+
+  if (leadSent) renderFull(); else { $('#rFull').innerHTML = ''; $('#lockBox').classList.remove('open'); }
+  go('result');
+  haptic('notify', 'success');
+  ui.closingConfirm(true);
+  updateResultMain();
+}
+function renderFull() {
+  const gaps = window._gaps || [];
+  const full = $('#rFull'); full.innerHTML = '';
+  if (!gaps.length) full.innerHTML = '<div class="gap" style="border-left-color:var(--good)"><div class="t">Zaif nuqta topilmadi</div><div class="fx">Barcha bandlarda maksimal ball.</div></div>';
+  BLOCKS.forEach(b => {
+    const list = gaps.filter(g => g.q.b === b.id);
+    if (!list.length) return;
+    const h = document.createElement('div'); h.className = 'gh'; h.textContent = b.name; full.appendChild(h);
+    list.forEach(g => full.appendChild(gapEl(g)));
+  });
+  $('#lockBox').classList.add('open');
+}
+function gapEl(g) {
+  const d = document.createElement('div');
+  d.className = 'gap' + (g.lost < g.q.w * 0.7 ? ' w-mid' : '');
+  d.innerHTML = '<div class="t">' + esc(g.q.t) + '</div><div class="cur">Sizning javobingiz: ' + esc(g.cur) + '</div><div class="fx">' + esc(g.q.fix) + '</div><div class="cost">Umumiy balldan −' + g.lost.toFixed(1) + '</div>';
+  return d;
+}
+function updateResultMain() {
+  if (leadSent) ui.main(tgUI ? 'Chatga qaytish' : 'Yakunlash', () => { ui.closingConfirm(false); if (tgUI) tg.close(); else restart(); });
+  else ui.main('To\'liq hisobotni olish', submitLead);
+}
+
+/* ---------- pul hisobi ---------- */
+const fmt = n => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+$('#avgCheck').addEventListener('input', e => { const d = e.target.value.replace(/\D/g, '').slice(0, 12); e.target.value = d ? fmt(d) : ''; });
+function calcMoney() {
+  const raw = $('#avgCheck').value.replace(/\D/g, '');
+  if (!raw) { $('#avgCheck').focus(); return; }
+  const chk = parseInt(raw, 10);
+  const leadsIdx = profile.leads, leads = (PROFILE[2].v && PROFILE[2].v[leadsIdx]) || 120;
+  const t = total();
+  const extra = Math.max(1, Math.round(leads * ((100 - t) / 100) * 0.05));
+  avgCheckValue = chk;
+  $('#moneyVal').textContent = '~' + fmt(extra * chk) + ' so\'m / oy';
+  $('#moneyNote').textContent = 'Taxminan ' + extra + ' ta qo\'shimcha bitim. Hisob konservativ: oyiga ~' + leads + ' lid, o\'rtacha chek ' + fmt(chk) + ' so\'m va zaif nuqtalar yopilgan holat asosida. Aniq raqam qo\'ng\'iroq yozuvlari tahlilida ko\'rinadi.';
+  $('#moneyOut').classList.add('on'); haptic('impact');
+  try { $('#avgCheck').blur(); } catch (e) {}
+}
+
+/* ---------- telefon ---------- */
+function formatPhone(v) {
+  let d = v.replace(/\D/g, '');
+  if (!d) return '';
+  if (v.trim().startsWith('+') && !d.startsWith('998')) return '+' + d.slice(0, 15);
+  if (d.length === 9 && !d.startsWith('998')) d = '998' + d;
+  if (d.startsWith('998')) {
+    d = d.slice(0, 12);
+    const p = [d.slice(3, 5), d.slice(5, 8), d.slice(8, 10), d.slice(10, 12)].filter(Boolean);
+    return '+998' + (p.length ? ' ' + p.join(' ') : '');
+  }
+  return d.slice(0, 15);
+}
+$('#fPhone').addEventListener('input', e => { const cur = e.target.value; if (cur.length >= 9 || cur.startsWith('+')) e.target.value = formatPhone(cur); });
+$('#fPhone').addEventListener('blur', e => { e.target.value = formatPhone(e.target.value); });
+let phoneSource = 'text';
+function requestContact() {
+  if (!(tg && ver('6.9'))) return;
+  haptic('impact');
+  try {
+    tg.requestContact((ok, res) => {
+      const c = res && res.responseUnsafe && res.responseUnsafe.contact;
+      if (ok && c && c.phone_number) {
+        $('#fPhone').value = formatPhone(c.phone_number); phoneSource = 'contact';
+        setErr('fWrapPhone', ''); haptic('notify', 'success');
+      } else if (!ok) toast('Raqam berilmadi - qo\'lda kiriting');
+    });
+  } catch (e) { toast('Raqamni qo\'lda kiriting'); }
+}
+
+/* ---------- lead ---------- */
+function setErr(wrapId, msg) {
+  const w = document.getElementById(wrapId); const fe = w.querySelector('.fe');
+  w.classList.toggle('err', !!msg); fe.textContent = msg || '';
+}
+function focusField(id) { const el = document.getElementById(id); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => el.focus(), 250); }
+function submitLead() {
+  if (submitting || leadSent) return;
+  const name = $('#fName').value.trim(), comp = $('#fCompany').value.trim(), phone = $('#fPhone').value.trim();
+  setErr('fWrapName', ''); setErr('fWrapPhone', ''); $('#fErr').classList.remove('on');
+  if (name.length < 2) { setErr('fWrapName', 'Ismingizni yozing.'); focusField('fName'); haptic('notify', 'error'); return; }
+  if (/\d/.test(name)) { setErr('fWrapName', 'Ismda raqam bo\'lmasin.'); focusField('fName'); haptic('notify', 'error'); return; }
+  if (phone.replace(/\D/g, '').length < 9) { setErr('fWrapPhone', 'Telefon raqamini to\'liq yozing.'); focusField('fPhone'); haptic('notify', 'error'); return; }
+
+  if (!inTelegram) {
+    showFormError('Natijani olish uchun ilovani Telegram botida oching — hisobot chatingizga keladi.');
+    return;
+  }
+  const payload = {
+    initData: tg.initData,
+    name: name, company: comp, phone: phone, phone_source: phoneSource,
+    profile: { sector: profile.sector, team: profile.team, leads: profile.leads },
+    answers: answers, avg_check: avgCheckValue,
+  };
+  submitting = true;
+  ui.main('Yuborilmoqda…', null, { enabled: false, progress: true });
+
+  const ctrl = ('AbortController' in window) ? new AbortController() : null;
+  const timer = ctrl && setTimeout(() => ctrl.abort(), 20000);
+  fetch('/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: ctrl ? ctrl.signal : undefined })
+    .then(r => r.json().then(j => ({ status: r.status, j: j })).catch(() => ({ status: r.status, j: {} })))
+    .then(({ status, j }) => {
+      if (j && j.ok) { finish(); return; }
+      const msg = (j && j.error) || 'Yuborib bo\'lmadi. Birozdan keyin qayta urinib ko\'ring.';
+      if (j && j.field === 'name') { setErr('fWrapName', msg); focusField('fName'); }
+      else if (j && j.field === 'phone') { setErr('fWrapPhone', msg); focusField('fPhone'); }
+      else showFormError(msg);
+    })
+    .catch(() => showFormError('Internet bilan muammo. Qayta urinib ko\'ring.'))
+    .finally(() => { clearTimeout(timer); submitting = false; if (!leadSent) updateResultMain(); });
+}
+function showFormError(msg) { const e = $('#fErr'); e.textContent = msg; e.classList.add('on'); e.scrollIntoView({ behavior: 'smooth', block: 'center' }); haptic('notify', 'error'); }
+function finish() {
+  leadSent = true; store.clear(); savedState = null;
+  $('#fThanks').classList.add('on'); $('#gateHead').querySelector('p').textContent = 'Hisobot ochildi. Nusxasi Telegram chatingizga yuborildi.';
+  $('#leadForm').querySelectorAll('input').forEach(i => i.readOnly = true);
+  renderFull(); haptic('notify', 'success'); ui.closingConfirm(false);
+  updateResultMain();
+  setTimeout(() => $('#lockBox').scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+}
+
+function restart() {
+  answers = new Array(Q.length).fill(null); profile = {}; idx = 0; leadSent = false; avgCheckValue = null; phoneSource = 'text';
+  store.clear(); savedState = null; $('#resumeBox').classList.add('hide');
+  $('#fThanks').classList.remove('on'); $('#lockBox').classList.remove('open'); $('#moneyOut').classList.remove('on');
+  $('#fErr').classList.remove('on'); setErr('fWrapName', ''); setErr('fWrapPhone', '');
+  $('#leadForm').querySelectorAll('input').forEach(i => i.readOnly = false);
+  ['fCompany', 'fPhone', 'avgCheck'].forEach(id => $('#' + id).value = '');
+  $('#gateHead').querySelector('p').textContent = 'Yuqorida 3 ta nuqta ko\'rsatildi. To\'liq hisobotda barcha zaif nuqtalar blokma-blok, har biri uchun aniq qadam bilan chiqadi — Telegram chatingizga ham yuboriladi.';
+  $('#rRing').style.strokeDashoffset = 314;
+  renderProfile(); ui.hideMain(); go('intro'); showIntro(); haptic('impact');
+}
+
+/* ---------- ishga tushirish ---------- */
+(function init() {
+  const bot = (document.documentElement.dataset.bot || '').replace(/[^A-Za-z0-9_]/g, '');
+  const link = $('#botLink');
+  if (link) { if (bot) link.href = 'https://t.me/' + bot; else link.removeAttribute('href'); }
+  if (BANK && BANK.questions) { boot(); return; }
+  fetch('audit.json').then(r => r.json()).then(d => { BANK = d; boot(); })
+    .catch(() => { $('#s-intro .wrap').insertAdjacentHTML('beforeend', '<div class="notice">Savollar bazasi yuklanmadi. Sahifani yangilang.</div>'); });
+})();
+</script>
+</body>
+</html>

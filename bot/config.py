@@ -76,6 +76,26 @@ def _clean_token(raw: str) -> str:
     return re.sub(r"\s+", "", raw or "")
 
 
+def _webapp_url() -> str:
+    """Mini App manzili: WEBAPP_URL yoki Railway avtomatik domeni. Faqat HTTPS."""
+    raw = _env("WEBAPP_URL")
+    if not raw:
+        domain = _env("RAILWAY_PUBLIC_DOMAIN") or _env("RENDER_EXTERNAL_HOSTNAME")
+        if domain:
+            raw = f"https://{domain}"
+    raw = raw.rstrip("/")
+    if not raw:
+        return ""
+    if not raw.lower().startswith("https://"):
+        # Telegram Mini App faqat HTTPS manzilni qabul qiladi.
+        logging.getLogger(__name__).warning(
+            "WEBAPP_URL HTTPS emas (%s) - Mini App tugmalari o'chirildi. "
+            "Lokal sinov uchun ngrok/cloudflared kabi HTTPS tunnel ishlating.", raw,
+        )
+        return ""
+    return raw
+
+
 @dataclass
 class Config:
     """Botning barcha sozlamalari."""
@@ -92,10 +112,16 @@ class Config:
     tz_offset_hours: int = 5
     log_level: str = "INFO"
     db_path: Path = field(default_factory=lambda: DATA_DIR / "db.json")
+    # Mini App (sotuv auditi) ochiq HTTPS manzili. Bo'sh bo'lsa - tugmalar ko'rinmaydi.
+    webapp_url: str = ""
 
     @property
     def admin_bot_enabled(self) -> bool:
         return bool(self.admin_bot_token)
+
+    @property
+    def webapp_enabled(self) -> bool:
+        return bool(self.webapp_url)
 
 
 def load_config() -> Config:
@@ -137,6 +163,7 @@ def load_config() -> Config:
 
     return Config(
         user_bot_token=user_token,
+        webapp_url=_webapp_url(),
         admin_bot_token=admin_token,
         admin_ids=_env_ids("ADMIN_IDS"),
         admin_password=_env("ADMIN_PASSWORD", "admin"),

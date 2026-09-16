@@ -54,17 +54,23 @@ def build_csv(service: Service) -> bytes:
     rows = service.storage.all_applications()
     buffer = io.StringIO()
     writer = csv.writer(buffer, delimiter=";", quoting=csv.QUOTE_MINIMAL)
-    writer.writerow(
-        ["ID", "Ism", "Telefon", "Username", "Telegram ID", "Holat", "Sana", "Kim", "Qachon"]
-    )
+    writer.writerow([
+        "ID", "Ism", "Kompaniya", "Telefon", "Username", "Telegram ID", "Manba",
+        "Audit balli", "Audit xulosasi", "Holat", "Sana", "Kim", "Qachon",
+    ])
     tz_offset = service.config.tz_offset_hours
     for item in rows:
+        audit_info = item.get("audit") if isinstance(item.get("audit"), dict) else {}
         writer.writerow([
             _sanitize_cell(item.get("id")),
             _sanitize_cell(item.get("name")),
+            _sanitize_cell(item.get("company") or ""),
             _sanitize_cell(item.get("phone")),
             _sanitize_cell(("@" + item["username"]) if item.get("username") else ""),
             _sanitize_cell(item.get("user_id")),
+            _sanitize_cell("Mini App audit" if item.get("source") == "webapp" else "Bot"),
+            _sanitize_cell(audit_info.get("score", "")),
+            _sanitize_cell(audit_info.get("band", "")),
             _sanitize_cell(T.STATUS_LABELS.get(item.get("status", ""), item.get("status", ""))),
             _sanitize_cell(fmt_dt(item.get("created_at"), tz_offset)),
             _sanitize_cell(item.get("handled_by_name") or ""),
