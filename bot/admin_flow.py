@@ -6,7 +6,7 @@ import logging
 from typing import Any, Dict
 
 from . import texts as T
-from .admin_handlers import handle_admin_command, try_login
+from .admin_handlers import handle_admin_command, register_admin_chat, try_login
 from .service import ADMIN_BOT, Service
 from .telegram import BotAPI
 from .utils import esc, remove_keyboard
@@ -23,13 +23,15 @@ def handle_message(service: Service, api: BotAPI, message: Dict[str, Any]) -> No
     chat_id = int(chat.get("id") or 0)
     if not user_id or not chat_id:
         return
-    # Guruhga qo'shilsa - faqat adminlar ro'yxatiga qo'shish uchun /start ishlaydi.
-    if chat.get("type") != "private" and not service.is_admin(ADMIN_BOT, chat_id):
+    text = (message.get("text") or "").strip()
+    is_group = chat.get("type") != "private"
+    # Guruhda faqat buyruqlar ishlanadi (oddiy suhbatga aralashmaymiz).
+    if is_group and not text.startswith("/"):
         return
 
-    text = (message.get("text") or "").strip()
     session_key = service.session_key(ADMIN_BOT, user_id)
-    is_admin = service.is_admin(ADMIN_BOT, user_id)
+    # Shaxsiy chatda - o'zi admin bo'lsa; guruhda - guruh ro'yxatda bo'lsa.
+    is_admin = service.can_manage(ADMIN_BOT, user_id, chat_id)
 
     if text.startswith("/"):
         command = text.split()[0].split("@")[0].lower()
@@ -44,6 +46,13 @@ def handle_message(service: Service, api: BotAPI, message: Dict[str, Any]) -> No
                 )
                 return
             if argument and try_login(service, ADMIN_BOT, api, chat_id, user, argument):
+                return
+            if service.config.admin_auto_join:
+                # ADMIN_AUTO_JOIN=1: parolsiz - /start bosgan har kim (yoki guruh) oladi.
+                register_admin_chat(service, ADMIN_BOT, api, chat_id, user)
+                return
+            if is_group:
+                api.send_message(chat_id, T.ADMIN_GROUP_HINT)
                 return
             service.storage.set_session(session_key, state=STATE_PASSWORD)
             api.send_message(chat_id, T.ADMIN_ASK_PASSWORD, reply_markup=remove_keyboard())
@@ -71,6 +80,11 @@ def handle_message(service: Service, api: BotAPI, message: Dict[str, Any]) -> No
 
     if is_admin:
         api.send_message(chat_id, T.ADMIN_COMMANDS)
+        return
+
+    if service.config.admin_auto_join:
+        # Parol yo'q rejimi: har qanday xabar ham ro'yxatga qo'shadi.
+        register_admin_chat(service, ADMIN_BOT, api, chat_id, user)
         return
 
     # Parol kutilyapti.

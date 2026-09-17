@@ -114,7 +114,7 @@ def handle_admin_command(
     user_id = int(user.get("id") or 0)
     if command not in ADMIN_COMMANDS:
         return False
-    if not service.is_admin(bot_key, user_id):
+    if not service.can_manage(bot_key, user_id, chat_id):
         api.send_message(chat_id, T.ADMIN_ONLY)
         return True
 
@@ -147,7 +147,8 @@ def handle_admin_command(
                 log.error("%s: eksport yuborilmadi: %s", api.label, exc)
                 api.send_message(chat_id, "❌ Faylni yuborib bo'lmadi. Keyinroq urinib ko'ring.")
     elif command in ("/chiqish", "/logout"):
-        service.storage.remove_admin(bot_key, user_id)
+        # Guruhda - guruhni, shaxsiy chatda - o'zini ro'yxatdan chiqaradi.
+        service.storage.remove_admin(bot_key, chat_id)
         api.send_message(chat_id, T.ADMIN_LOGGED_OUT)
     return True
 
@@ -160,18 +161,27 @@ def try_login(
     user: Dict[str, Any],
     password: str,
 ) -> bool:
-    """Parolni tekshirib, adminni ro'yxatga qo'shadi."""
-    user_id = int(user.get("id") or 0)
+    """Parolni tekshirib, chatni (shaxsiy yoki guruh) ro'yxatga qo'shadi."""
     if password.strip() != service.config.admin_password:
         return False
-    service.storage.add_admin(bot_key, user_id)
+    register_admin_chat(service, bot_key, api, chat_id, user)
+    return True
+
+
+def register_admin_chat(
+    service: Service, bot_key: str, api: BotAPI, chat_id: int, user: Dict[str, Any]
+) -> None:
+    """Chatni zayavka oluvchilar ro'yxatiga qo'shadi (shaxsiy chat yoki guruh)."""
+    user_id = int(user.get("id") or 0)
+    service.storage.add_admin(bot_key, chat_id)
     service.storage.clear_session(service.session_key(bot_key, user_id))
     api.send_message(
         chat_id,
         T.ADMIN_WELCOME.format(name=esc(display_name(user)), commands=T.ADMIN_COMMANDS),
     )
-    log.info("%s: yangi admin ulandi: %s (%s)", api.label, user_id, display_name(user))
-    return True
+    log.info(
+        "%s: yangi qabul qiluvchi: chat %s (%s)", api.label, chat_id, display_name(user)
+    )
 
 
 def handle_callback(service: Service, bot_key: str, api: BotAPI, callback: Dict[str, Any]) -> None:
@@ -185,7 +195,8 @@ def handle_callback(service: Service, bot_key: str, api: BotAPI, callback: Dict[
     if not data.startswith("app:"):
         api.answer_callback(callback_id)
         return
-    if not service.is_admin(bot_key, user_id):
+    cb_chat_id = int((message.get("chat") or {}).get("id") or 0)
+    if not service.can_manage(bot_key, user_id, cb_chat_id):
         api.answer_callback(callback_id, T.CB_NO_RIGHTS, alert=True)
         return
 

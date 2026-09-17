@@ -51,10 +51,17 @@ Zayavkalarni ko'rish uchun har bir botga ulanishingiz kerak:
 
 | Bot | Nima qilish kerak |
 |---|---|
-| **Admin boti** (2-bot) | Botga `/start` yozing → parolni yuboring |
+| **Admin boti** (2-bot) | Botga `/start` yozing → parolni yuboring (`ADMIN_AUTO_JOIN=1` bo'lsa parol shart emas) |
 | **So'rov boti** (1-bot) | Botga `/admin <parol>` deb yozing |
 
 Parol `.env` faylidagi `ADMIN_PASSWORD` da — uni albatta o'zgartiring.
+
+**Hamma ko'rsin desangiz** — ikki yo'l:
+- `ADMIN_AUTO_JOIN=1` — admin botiga `/start` bosgan har kim zayavkalarni oladi (parolsiz).
+  Diqqat: bot username'ini bilgan har kim ham ko'ra oladi.
+- **Guruh**: admin botini xodimlar guruhiga qo'shing va guruhda `/start PAROL` yozing
+  (auto-join yoqiq bo'lsa shunchaki `/start`) — barcha zayavkalar guruhga tushadi,
+  tugmalar (✅ Bog'landim / ❌ Bekor) va buyruqlar guruhda hammaga ishlaydi.
 
 ---
 
@@ -124,6 +131,7 @@ Har bir yangi zayavka **2-botga (admin boti)** shu ko'rinishda tushadi:
 | `USER_BOT_TOKEN` | 1-bot (mijozlar uchun) tokeni — **majburiy** |
 | `ADMIN_BOT_TOKEN` | 2-bot (adminlar uchun) tokeni |
 | `ADMIN_PASSWORD` | Admin bo'lish uchun parol |
+| `ADMIN_AUTO_JOIN` | `1` — admin botiga kirgan har kim parolsiz zayavka oladi |
 | `ADMIN_IDS` | Doimiy adminlar ID lari, vergul bilan (ixtiyoriy) |
 | `COMPANY_NAME` | Salomlashuvda ko'rinadigan nom |
 | `CONTACT_INFO` | Mijozga ko'rsatiladigan aloqa (telefon/manzil) |
@@ -206,8 +214,9 @@ Zayavka **2-botga (admin) ikki bosqichda** tushadi — bitta lead ham yo'qolmayd
    **to'liq hisobot** (barcha zaif nuqtalar va tavsiyalar) va **javoblar varag'i**
    (28 savolning har biriga mijoz nima deb javob bergani, ✅/⚠️/❌ bilan). Telefon o'rnida «hali kiritilmadi» turadi —
    mijoz formani tashlab ketsa ham unga Telegram orqali yozish mumkin.
-2. **Mijoz ism/telefon yuborganda** o'sha karta yangilanadi (telefon, kompaniya,
-   o'rtacha chek qo'shiladi), mijozning chatiga esa to'liq hisobot boradi.
+2. **Mijoz ism/telefon yuborganda** — ilovada «Qabul qilindi ✅» animatsiyasi, adminlarga
+   esa kartaga javob sifatida darhol «📞 mijoz telefon qoldirdi» xabari (tugmalar bilan)
+   keladi, karta ham yangilanadi; mijozning chatiga to'liq hisobot boradi.
 
 `/eksport` CSV'da `Kompaniya`, `Manba`, `Audit balli`, `Audit xulosasi` ustunlari bor.
 

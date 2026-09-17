@@ -284,8 +284,10 @@ def handle_lead(service: Service, payload: Dict[str, Any]) -> Tuple[int, Dict[st
             phone_source=phone_source,
             audit=audit.summary_for_storage(result, avg_check),
         )
-        service.notifier.refresh_status(application)
         log.info("Mini App: zayavka #%s telefon bilan to'ldirildi (user %s)", application["id"], user_id)
+        threading.Thread(
+            target=service.notifier.notify_contact, args=(application,), name="webapp-contact", daemon=True
+        ).start()
         _finish_lead(service, application, result, name, phone)
         return 200, {
             "ok": True, "id": application["id"], "score": result["score"],

@@ -5,14 +5,15 @@ from __future__ import annotations
 import logging
 import queue
 import threading
+import time
 from typing import Any, Dict, List, Optional
 
 from .config import Config
 from .storage import Storage
 from .telegram import BotAPI, TelegramError
 from .texts import (
-    AUDIT_BLOCK, AUDIT_NO_PHONE, COMPANY_LINE, NEW_APPLICATION, PHONE_PENDING, SOURCE_WEBAPP,
-    STATUS_FOOTER, STATUS_LABELS,
+    AUDIT_BLOCK, AUDIT_NO_PHONE, COMPANY_LINE, NEW_APPLICATION, PHONE_ARRIVED, PHONE_PENDING,
+    SOURCE_WEBAPP, STATUS_FOOTER, STATUS_LABELS,
 )
 from .utils import clip, esc, fmt_dt
 from .validators import pretty_phone
@@ -258,6 +259,58 @@ class Notifier:
             else:
                 log.error("%s: %s ga yuborilmadi: %s", api.label, chat_id, exc)
             return None
+
+    def notify_contact(self, app: Dict[str, Any]) -> None:
+        """Mini App: telefon keldi - kartani yangilaydi VA adminlarga alohida «issiq» xabar.
+
+        Faqat kartani tahrirlash ko'zga tashlanmaydi; yangi xabar (kartaga javob
+        sifatida) bildirishnoma beradi. Karta hali yetkazilmagan bo'lsa - to'liq yuboriladi.
+        """
+        app = self.storage.get_application(app["id"]) or app
+        self.refresh_status(app)
+        notes = [n for n in app.get("notifications", []) if self.apis.get(n.get("bot"))]
+        if not notes:
+            self.enqueue(app)
+            return
+        audit_info = app.get("audit") if isinstance(app.get("audit"), dict) else {}
+        company = app.get("company") or ""
+        text = PHONE_ARRIVED.format(
+            id=app["id"],
+            name=esc(app.get("name")),
+            company=COMPANY_LINE.format(company=esc(company)) if company else "",
+            phone=esc(pretty_phone(app.get("phone") or "")),
+            tg=telegram_link(app),
+            score=audit_info.get("score", "—"),
+            band=esc(audit_info.get("band", "")),
+            time=fmt_dt(time.time(), self.config.tz_offset_hours),
+        )
+        seen = set()
+        for note in notes:
+            key = (note.get("bot"), note.get("chat_id"))
+            if key in seen:
+                continue
+            seen.add(key)
+            api = self.apis[note["bot"]]
+            params: Dict[str, Any] = {
+                "chat_id": int(note["chat_id"]),
+                "text": text,
+                "parse_mode": "HTML",
+                "link_preview_options": {"is_disabled": True},
+                "reply_parameters": {
+                    "message_id": int(note.get("message_id") or 0),
+                    "allow_sending_without_reply": True,
+                },
+            }
+            markup = _build_markup(app, note["bot"])
+            if markup:
+                params["reply_markup"] = markup
+            try:
+                sent = api.call("sendMessage", params)
+                self.storage.add_notification(
+                    app["id"], note["bot"], int(note["chat_id"]), int(sent.get("message_id") or 0)
+                )
+            except TelegramError as exc:
+                log.warning("%s: #%s telefon xabari %s ga yuborilmadi: %s", api.label, app["id"], note["chat_id"], exc)
 
     def refresh_status(self, app: Dict[str, Any], skip: Optional[Dict[str, int]] = None) -> None:
         """Status o'zgarganda barcha botlardagi xabarlarni yangilaydi."""

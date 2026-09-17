@@ -24,5 +24,9 @@ class Service:
     def is_admin(self, bot_key: str, user_id: int) -> bool:
         return user_id in self.config.admin_ids or self.storage.is_admin(bot_key, user_id)
 
+    def can_manage(self, bot_key: str, user_id: int, chat_id: int) -> bool:
+        """Foydalanuvchi o'zi admin YOKI ro'yxatdagi admin guruhida yozyapti."""
+        return self.is_admin(bot_key, user_id) or (chat_id != user_id and self.is_admin(bot_key, chat_id))
+
     def session_key(self, bot_key: str, user_id: int) -> str:
         return f"{bot_key}:{user_id}"

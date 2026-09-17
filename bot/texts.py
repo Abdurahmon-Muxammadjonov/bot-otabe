@@ -141,6 +141,10 @@ ADMIN_COMMANDS = (
     "/yordam — shu ro'yxat"
 )
 ADMIN_ONLY = "⛔️ Bu buyruq faqat adminlar uchun. /start bosing va parolni kiriting."
+ADMIN_GROUP_HINT = (
+    "🔐 Bu guruhga zayavkalar tushishi uchun guruhda yozing:\n"
+    "<code>/start PAROL</code>  (parol .env dagi ADMIN_PASSWORD)"
+)
 ADMIN_LOGGED_OUT = "👋 Bildirishnomalar o'chirildi. Qayta ulanish uchun /start bosing."
 ADMIN_ALREADY = "✅ Siz allaqachon ulangansiz.\n\n{commands}"
 
@@ -161,6 +165,16 @@ AUDIT_NO_PHONE = (
     "bu karta yangilanadi. Hozircha Telegram orqali yozish mumkin."
 )
 AUDIT_REPORT_HEADER = "📋 <b>Zayavka #{id} — to'liq audit hisoboti</b>\n"
+PHONE_ARRIVED = (
+    "📞 <b>Zayavka #{id} — mijoz telefon qoldirdi!</b>\n\n"
+    "👤 <b>Ism:</b> {name}\n"
+    "{company}"
+    "📞 <b>Telefon:</b> <code>{phone}</code>\n"
+    "👥 <b>Telegram:</b> {tg}\n"
+    "🎯 <b>Ball:</b> {score}/100 — {band}\n"
+    "🕒 {time}\n\n"
+    "Hoziroq bog'laning — mijoz «issiq» 🔥"
+)
 COMPANY_LINE = "🏢 <b>Kompaniya:</b> {company}\n"
 AUDIT_BLOCK = "\n\n{summary}"
 

@@ -104,6 +104,9 @@ class Config:
     admin_bot_token: str
     admin_ids: List[int] = field(default_factory=list)
     admin_password: str = "admin"
+    # True bo'lsa admin botiga /start bosgan HAR KIM (yoki bot qo'shilgan guruh)
+    # parolsiz zayavkalarni oladi. Bot username'ini bilgan har kim ko'ra oladi!
+    admin_auto_join: bool = False
     company_name: str = "Xizmat"
     contact_info: str = ""
     poll_timeout: int = 25
@@ -167,6 +170,7 @@ def load_config() -> Config:
         admin_bot_token=admin_token,
         admin_ids=_env_ids("ADMIN_IDS"),
         admin_password=_env("ADMIN_PASSWORD", "admin"),
+        admin_auto_join=_env("ADMIN_AUTO_JOIN", "0").lower() in ("1", "true", "yes", "ha"),
         company_name=_env("COMPANY_NAME", "Xizmat"),
         contact_info=_env("CONTACT_INFO", ""),
         poll_timeout=_env_int("POLL_TIMEOUT", 25),
