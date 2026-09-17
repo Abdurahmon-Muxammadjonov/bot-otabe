@@ -191,7 +191,7 @@ Mijoz botda **Menyu** tugmasini, `/audit` buyrug'ini yoki `/start` dagi
 «🔍 Sotuv auditini boshlash» tugmasini bosadi → Telegram ichida ilova ochiladi:
 
 ```
-Kirish  →  3 ta kontekst savoli  →  28 savol (6 blok)  →  Natija:
+Kirish  →  4 ta kontekst savoli (yo'nalish, jamoa, lidlar, oylik aylanma)  →  28 savol (6 blok)  →  Natija:
   • umumiy ball (0–100) va xulosa
   • 6 blok bo'yicha diagramma
   • eng zaif 3 nuqta + yechimi
@@ -202,8 +202,9 @@ Kirish  →  3 ta kontekst savoli  →  28 savol (6 blok)  →  Natija:
 Zayavka **2-botga (admin) ikki bosqichda** tushadi — bitta lead ham yo'qolmaydi:
 
 1. **Oxirgi savolga javob berilishi bilan** adminlarga karta keladi: mijozning Telegram
-   profili, ball, bloklar diagrammasi, eng zaif 3 nuqta + alohida xabarda **to'liq hisobot**
-   (barcha zaif nuqtalar va tavsiyalar). Telefon o'rnida «hali kiritilmadi» turadi —
+   profili, ball, oylik aylanma, bloklar diagrammasi, eng zaif 3 nuqta + alohida xabarlarda
+   **to'liq hisobot** (barcha zaif nuqtalar va tavsiyalar) va **javoblar varag'i**
+   (28 savolning har biriga mijoz nima deb javob bergani, ✅/⚠️/❌ bilan). Telefon o'rnida «hali kiritilmadi» turadi —
    mijoz formani tashlab ketsa ham unga Telegram orqali yozish mumkin.
 2. **Mijoz ism/telefon yuborganda** o'sha karta yangilanadi (telefon, kompaniya,
    o'rtacha chek qo'shiladi), mijozning chatiga esa to'liq hisobot boradi.

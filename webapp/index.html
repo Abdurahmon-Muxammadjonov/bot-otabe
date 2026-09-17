@@ -303,7 +303,7 @@ a{color:var(--link)}
 <!-- ============ 2. PROFILE ============ -->
 <section class="screen" id="s-profile">
   <div class="wrap page">
-    <div class="kicker"><span>Kontekst</span><span>3 ta savol</span></div>
+    <div class="kicker"><span>Kontekst</span><span id="profileCount">4 ta savol</span></div>
     <div id="profileBox"></div>
   </div>
 </section>
@@ -529,6 +529,7 @@ function boot() {
   PROFILE = BANK.profile; BLOCKS = BANK.blocks; Q = BANK.questions; BANDS = BANK.bands;
   answers = new Array(Q.length).fill(null);
   buildDemo();
+  $('#profileCount').textContent = PROFILE.length + ' ta savol';
   renderProfile();
   buildStrip();
   if (!inTelegram) {
@@ -585,7 +586,7 @@ function renderProfile() {
   const box = $('#profileBox'); box.innerHTML = '';
   PROFILE.forEach((p, pi) => {
     const d = document.createElement('div'); d.className = 'pblock';
-    d.innerHTML = '<div class="qlabel">' + (pi + 1) + ' / ' + PROFILE.length + '</div><h2 class="qtext" style="font-size:clamp(18px,5vw,21px)">' + esc(p.q) + '</h2>';
+    d.innerHTML = '<div class="qlabel">' + (pi + 1) + ' / ' + PROFILE.length + '</div><h2 class="qtext" style="font-size:clamp(18px,5vw,21px)">' + esc(p.q) + '</h2>' + (p.h ? '<div class="qhint">' + esc(p.h) + '</div>' : '');
     const wrap = document.createElement('div'); wrap.className = 'opts';
     p.o.forEach((o, oi) => {
       const b = document.createElement('button');
@@ -606,6 +607,8 @@ function renderProfile() {
   });
 }
 function profileDone() { return PROFILE.every(p => Number.isInteger(profile[p.key])); }
+function profileData() { const o = {}; PROFILE.forEach(p => { o[p.key] = profile[p.key]; }); return o; }
+function profileLabel(key) { const p = PROFILE.find(x => x.key === key); return p && Number.isInteger(profile[key]) ? p.o[profile[key]] : ''; }
 function updateProfileMain() { ui.main('Savollarga o\'tish', () => { if (profileDone()) { haptic('impact', 'medium'); idx = answers.indexOf(null) === -1 ? 0 : answers.indexOf(null); startAudit(true); } }, { enabled: profileDone() }); }
 
 function startAudit(fromStart) {
@@ -691,7 +694,7 @@ function showResult() {
   requestAnimationFrame(() => setTimeout(() => { ring.style.strokeDashoffset = 314 - 314 * t / 100; }, 80));
   $('#rBand').textContent = band.t; $('#rBand').className = 'band ' + k;
   $('#rText').textContent = band.d;
-  $('#rMeta').textContent = [PROFILE[0].o[profile.sector], PROFILE[1].o[profile.team]].filter(Boolean).join(' · ');
+  $('#rMeta').textContent = [profileLabel('sector'), profileLabel('turnover')].filter(Boolean).join(' · ');
 
   const s = blockScores();
   const rc = $('#rCols'); rc.innerHTML = '';
@@ -726,7 +729,7 @@ function postResult() {
   if (!inTelegram || resultId !== null || resultPosting || leadSent) return;
   resultPosting = true;
   fetch('/api/result', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ initData: tg.initData, profile: { sector: profile.sector, team: profile.team, leads: profile.leads }, answers: answers }) })
+    body: JSON.stringify({ initData: tg.initData, profile: profileData(), answers: answers }) })
     .then(r => r.json()).then(j => { if (j && j.ok && Number.isInteger(j.id)) { resultId = j.id; persist(); } })
     .catch(() => {}).finally(() => { resultPosting = false; });
 }
@@ -760,7 +763,7 @@ function calcMoney() {
   const raw = $('#avgCheck').value.replace(/\D/g, '');
   if (!raw) { $('#avgCheck').focus(); return; }
   const chk = parseInt(raw, 10);
-  const leadsIdx = profile.leads, leads = (PROFILE[2].v && PROFILE[2].v[leadsIdx]) || 120;
+  const lp = PROFILE.find(x => x.key === 'leads'), leads = (lp && lp.v && lp.v[profile.leads]) || 120;
   const t = total();
   const extra = Math.max(1, Math.round(leads * ((100 - t) / 100) * 0.05));
   avgCheckValue = chk;
@@ -821,7 +824,7 @@ function submitLead() {
   const payload = {
     initData: tg.initData,
     name: name, company: comp, phone: phone, phone_source: phoneSource,
-    profile: { sector: profile.sector, team: profile.team, leads: profile.leads },
+    profile: profileData(),
     answers: answers, avg_check: avgCheckValue, application_id: resultId,
   };
   submitting = true;

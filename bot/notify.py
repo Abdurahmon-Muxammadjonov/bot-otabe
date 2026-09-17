@@ -215,11 +215,11 @@ class Notifier:
         """Mini App auditi bo'lsa - karta ostiga barcha zaif nuqtalar va tavsiyalar."""
         if app.get("source") != "webapp" or not isinstance(app.get("audit"), dict):
             return
-        from .audit import render_user_report  # aylanma importdan qochish
+        from .audit import render_answer_sheet, render_user_report  # aylanma importdan qochish
 
         chunks = render_user_report(
             app["audit"], self.config.company_name, for_admin=True, app_id=int(app["id"])
-        )
+        ) + render_answer_sheet(app["audit"], app_id=int(app["id"]))
         for chunk in chunks:
             try:
                 api.send_message(chat_id, chunk)

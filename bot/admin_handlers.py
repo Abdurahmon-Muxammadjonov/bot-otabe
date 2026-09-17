@@ -56,7 +56,7 @@ def build_csv(service: Service) -> bytes:
     writer = csv.writer(buffer, delimiter=";", quoting=csv.QUOTE_MINIMAL)
     writer.writerow([
         "ID", "Ism", "Kompaniya", "Telefon", "Username", "Telegram ID", "Manba",
-        "Audit balli", "Audit xulosasi", "Holat", "Sana", "Kim", "Qachon",
+        "Audit balli", "Audit xulosasi", "Yo'nalish", "Oylik aylanma", "Holat", "Sana", "Kim", "Qachon",
     ])
     tz_offset = service.config.tz_offset_hours
     for item in rows:
@@ -71,6 +71,8 @@ def build_csv(service: Service) -> bytes:
             _sanitize_cell("Mini App audit" if item.get("source") == "webapp" else "Bot"),
             _sanitize_cell(audit_info.get("score", "")),
             _sanitize_cell(audit_info.get("band", "")),
+            _sanitize_cell((audit_info.get("profile") or {}).get("sector", {}).get("label", "")),
+            _sanitize_cell((audit_info.get("profile") or {}).get("turnover", {}).get("label", "")),
             _sanitize_cell(T.STATUS_LABELS.get(item.get("status", ""), item.get("status", ""))),
             _sanitize_cell(fmt_dt(item.get("created_at"), tz_offset)),
             _sanitize_cell(item.get("handled_by_name") or ""),

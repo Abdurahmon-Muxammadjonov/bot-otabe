@@ -181,12 +181,18 @@ def fmt_money(value: int) -> str:
 
 # -------------------------------------------------------------- hisobotlar
 def profile_line(result: Dict[str, Any]) -> str:
+    """🏷 yo'nalish · jamoa · lidlar/oy  +  💵 oylik aylanma (bo'lsa)."""
+    prof = result["profile"]
     parts = [
-        result["profile"].get("sector", {}).get("label"),
-        result["profile"].get("team", {}).get("label"),
-        result["profile"].get("leads", {}).get("label"),
+        prof.get("sector", {}).get("label"),
+        prof.get("team", {}).get("label"),
+        (prof.get("leads", {}).get("label") or "") and f"{prof['leads']['label']} lid/oy",
     ]
-    return " · ".join(esc(p) for p in parts if p)
+    line = " · ".join(esc(p) for p in parts if p)
+    turnover = prof.get("turnover", {}).get("label")
+    if turnover:
+        line += f"\n💵 Oylik aylanma: <b>{esc(turnover)}</b>"
+    return line
 
 
 def _bar(pct: int, width: int = 8) -> str:
@@ -234,6 +240,7 @@ def render_user_report(
     ]
     head += [
         f"🎯 <b>Umumiy ball: {audit['score']}/100</b> — {esc(audit['band'])}",
+        f"🏷 {profile_line(audit)}",
         esc(audit["band_text"]),
         "",
         "<b>Bloklar bo'yicha:</b>",
@@ -269,6 +276,39 @@ def render_user_report(
             f"🤝 <b>{esc(company_name)}</b> jamoasi natijangizni ko'rdi va tez orada "
             "siz bilan bog'lanadi. Savollaringiz bo'lsa — shu chatga yozing."
         )
+    return chunks
+
+
+def render_answer_sheet(audit: Dict[str, Any], app_id: int = 0) -> List[str]:
+    """Admin uchun: mijozning barcha savollarga bergan javoblari, blokma-blok."""
+    bank = load_bank()
+    questions = bank["questions"]
+    answers = audit.get("answers") or []
+    if len(answers) != len(questions):
+        return []
+    chunks: List[str] = []
+    current = f"📝 <b>Zayavka #{app_id} — mijozning javoblari ({len(questions)} ta savol)</b>\n"
+    number = 0
+    for block in bank["blocks"]:
+        got = next((b for b in audit.get("blocks", []) if b["id"] == block["id"]), None)
+        pct = f" — {got['pct']}%" if got else ""
+        section = f"\n<b>▪️ {esc(block['name'])}{pct}</b>\n"
+        for question, idx in zip(questions, answers):
+            if question["b"] != block["id"]:
+                continue
+            number += 1
+            try:
+                label, score = question["a"][int(idx)]
+            except (IndexError, TypeError, ValueError):
+                label, score = "—", 0
+            mark = "✅" if float(score) >= 0.75 else "⚠️" if float(score) >= 0.45 else "❌"
+            section += f"{number}. {esc(question['t'])}\n     {mark} <i>{esc(label)}</i>\n"
+        if len(current) + len(section) > 3800:
+            chunks.append(current)
+            current = ""
+        current += section
+    if current.strip():
+        chunks.append(current)
     return chunks
 
 
